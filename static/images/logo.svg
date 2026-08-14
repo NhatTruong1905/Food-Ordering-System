@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 180" width="100%" height="100%">
+  <defs>
+    <filter id="subtle-shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- Group: Emblems (Left side: Utensils + Green leaves) -->
+  <g transform="translate(60, 15)">
+    <!-- Yellow/Gold Utensils -->
+    <!-- Fork Left -->
+    <path d="M45 42 C45 30 35 25 35 15 L32 15 C32 25 25 30 25 45 C25 60 35 70 38 75 L38 120 L42 120 L42 75 C45 70 55 60 55 45 Z" fill="#d4af37"/>
+    <!-- Fork Prongs Detail -->
+    <path d="M28 15 L28 35 M34 15 L34 35 M40 15 L40 35 M46 15 L46 35" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+
+    <!-- Spoon Center -->
+    <ellipse cx="65" cy="40" rx="18" ry="26" fill="#e5be38" filter="url(#subtle-shadow)"/>
+    <path d="M62 65 L62 135 L68 135 L68 65 Z" fill="#d4af37"/>
+
+    <!-- Knife/Fork Right -->
+    <path d="M85 45 C85 30 95 20 98 15 L102 15 C105 25 105 45 95 65 L95 120 L91 120 L91 65 C87 60 85 52 85 45 Z" fill="#d4af37"/>
+
+    <!-- Fresh Green Leaves at base -->
+    <!-- Left Leaf -->
+    <path d="M65 95 C40 85 0 90 5 110 C15 125 50 115 65 95 Z" fill="#2d6a36"/>
+    <path d="M12 108 C35 102 55 98 65 95" stroke="#3e8e4a" stroke-width="1.5" fill="none"/>
+    
+    <!-- Right Leaf -->
+    <path d="M65 95 C90 85 130 90 125 110 C115 125 80 115 65 95 Z" fill="#2d6a36"/>
+    <path d="M118 108 C95 102 75 98 65 95" stroke="#3e8e4a" stroke-width="1.5" fill="none"/>
+
+    <!-- Lower center bud -->
+    <ellipse cx="65" cy="115" rx="7" ry="12" fill="#2d6a36"/>
+  </g>
+
+  <!-- Typography: FOOD SHOPPE -->
+  <text x="230" y="105" font-family="'Cinzel', 'Playfair Display', 'Georgia', serif" font-size="78" font-weight="700" fill="#2b6b3b" letter-spacing="4">FOOD SHOPPE</text>
+
+  <!-- Horizontal divider lines around subtext -->
+  <line x1="230" y1="128" x2="840" y2="128" stroke="#2b6b3b" stroke-width="1.5" opacity="0.7"/>
+
+  <!-- Subtitle: DELI • MARKET • CATERING -->
+  <text x="535" y="152" text-anchor="middle" font-family="'Montserrat', 'Arial', sans-serif" font-size="22" font-weight="600" fill="#2b6b3b" letter-spacing="10">DELI  •  MARKET  •  CATERING</text>
+</svg>

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Shoppe | Deli • Market • Catering</title>
+  <meta name="description" content="Food Shoppe - Authentic gourmet deli, local artisan market, and fresh catering service with friendly atmosphere.">
+  
+  <!-- Google Fonts & Font Awesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Playfair+Display:ital,wght@0,500;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <div class="site-wrapper">
+    <!-- Top Navigation Bar -->
+    <nav class="main-nav" id="topNav">
+      <div class="nav-container">
+        <a href="#home" class="nav-link active">Home</a>
+        <a href="#menu" class="nav-link">Deli Menu</a>
+        <a href="#about" class="nav-link">About Us</a>
+        <a href="#location" class="nav-link">Location</a>
+        <a href="#gallery" class="nav-link">Photo Gallery</a>
+        <a href="#calendar" class="nav-link">Calendar</a>
+        <a href="#testimonials" class="nav-link">Testimonials</a>
+      </div>
+    </nav>
+
+    <!-- Header Brand Banner -->
+    <header class="site-header" id="home">
+      <div class="brand-banner">
+        <!-- SVG Vector Logo reproducing the Food Shoppe Emblem -->
+        <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="FOOD SHOPPE - DELI • MARKET • CATERING" class="brand-svg">
+      </div>
+    </header>
+
+    <!-- Main Two-Column Content Layout -->
+    <main class="main-container">
+      
+      <!-- Left Sidebar Panel -->
+      <aside class="sidebar-panel" id="about">
+        <h2 class="sidebar-title">Amazing food &amp; friendly atmosphere</h2>
+        
+        <!-- Storefront Image Card -->
+        <div class="storefront-card" data-open-storefront title="Bấm để xem ảnh lớn">
+          <img src="{{ url_for('static', filename='images/storefront.jpg') }}" alt="Food Shoppe Storefront" class="storefront-img">
+          <div class="storefront-badge">
+            <i class="fa-solid fa-camera"></i> Mặt tiền cửa hàng
+          </div>
+        </div>
+
+        <!-- Store Information Box -->
+        <div class="info-box">
+          <div class="info-row">
+            <i class="fa-solid fa-clock info-icon"></i>
+            <div>
+              <strong>Giờ mở cửa:</strong><br>
+              {{ hours }}
+            </div>
+          </div>
+          <div class="info-row" style="margin-top: 8px;">
+            <i class="fa-solid fa-phone info-icon"></i>
+            <div>
+              <strong>Hotline đặt món:</strong><br>
+              <a href="tel:{{ phone }}" style="color:var(--primary-green); text-decoration:none; font-weight:600;">{{ phone }}</a>
+            </div>
+          </div>
+          <div class="info-row" style="margin-top: 8px;">
+            <i class="fa-solid fa-location-dot info-icon"></i>
+            <div>
+              <strong>Địa chỉ:</strong><br>
+              {{ address }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Social Media Section -->
+        <div class="sidebar-social-section">
+          <h3 class="sidebar-section-heading">Check us out:</h3>
+          <div class="social-links-list" style="margin-top: 10px;">
+            <a href="https://facebook.com" target="_blank" class="social-icon-btn fb" title="Facebook" aria-label="Facebook">
+              <i class="fa-brands fa-facebook-f"></i>
+            </a>
+            <a href="https://twitter.com" target="_blank" class="social-icon-btn tw" title="Twitter / X" aria-label="Twitter">
+              <i class="fa-brands fa-x-twitter"></i>
+            </a>
+            <a href="https://instagram.com" target="_blank" class="social-icon-btn ig" title="Instagram" aria-label="Instagram">
+              <i class="fa-brands fa-instagram"></i>
+            </a>
+            <a href="https://yelp.com" target="_blank" class="social-icon-btn yelp" title="Yelp" aria-label="Yelp">
+              <i class="fa-brands fa-yelp"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- Quick Catering CTA in Sidebar -->
+        <div style="background: #eef5eb; border: 1px solid #c9dec3; border-radius: 6px; padding: 12px; text-align: center;">
+          <h4 style="font-family:'Playfair Display', serif; color:var(--primary-green-dark); margin-bottom:4px; font-size:15px;">Dịch vụ Catering Tiệc</h4>
+          <p style="font-size:12px; color:#4a5d45; margin-bottom:8px;">Nhận đặt tiệc công ty, sinh nhật &amp; sự kiện gia đình.</p>
+          <button type="button" class="btn-order-quick" style="width:100%;" data-order-item="Gói Tiệc Catering Sự Kiện" data-order-price="Liên hệ">
+            <i class="fa-solid fa-utensils"></i> Tư vấn Catering
+          </button>
+        </div>
+      </aside>
+
+      <!-- Right Main Column Panel -->
+      <section class="main-panel">
+        
+        <!-- Social Action Buttons (Matching Screenshot) -->
+        <div class="social-action-bar">
+          <button type="button" class="btn-social-action btn-tweet" id="btnTweet">
+            <i class="fa-brands fa-twitter"></i> Tweet
+          </button>
+          
+          <button type="button" class="btn-social-action btn-share" id="btnShare">
+            <i class="fa-solid fa-plus"></i> SHARE
+          </button>
+          
+          <button type="button" class="btn-social-action btn-follow" id="btnFollow">
+            <i class="fa-brands fa-twitter"></i> Follow @FoodShoppe
+          </button>
+        </div>
+
+        <!-- Featured Virtual Tour Section -->
+        <div class="virtual-tour-section" id="gallery">
+          <h1 class="section-heading-green">Check out a Virtual Tour of our Shoppe</h1>
+          
+          <div class="tour-hero-card" data-open-tour title="Bấm để khám phá không gian ảo bên trong 360°">
+            <img src="{{ url_for('static', filename='images/interior_tour.jpg') }}" alt="Virtual Tour of Food Shoppe" class="tour-hero-img">
+            
+            <div class="tour-overlay">
+              <span class="tour-overlay-badge">
+                <i class="fa-solid fa-vr-cardboard"></i> 360° Interactive Tour
+              </span>
+              <h2 class="tour-overlay-title">Khám Phá Không Gian Chợ Đặc Sản &amp; Quầy Deli</h2>
+              <p class="tour-overlay-sub">Trải nghiệm các kệ hàng gia vị hữu cơ, phô mai thủ công hảo hạng và không gian thưởng thức ẩm thực ấm cúng.</p>
+              <button type="button" class="btn-open-tour">
+                <i class="fa-solid fa-play"></i> Bắt đầu Tour Tham Quan Ngay
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Specials / Menu Highlights -->
+        <div class="specials-section" id="menu">
+          <div class="section-header-row">
+            <h2 class="section-subtitle-serif">
+              <i class="fa-solid fa-fire-flame-curved" style="color: #c99834; margin-right: 6px;"></i>
+              Món Ngon Đặc Sản Trong Ngày (Daily Specials)
+            </h2>
+            <span style="font-size: 13px; color: var(--text-muted);">Tươi ngon mỗi ngày</span>
+          </div>
+
+          <div class="specials-grid">
+            {% for item in specials %}
+            <div class="special-item-card">
+              <div>
+                <div class="special-header">
+                  <h3 class="special-title">{{ item.title }}</h3>
+                  <span class="special-price">{{ item.price }}</span>
+                </div>
+                <p class="special-desc">{{ item.description }}</p>
+              </div>
+              <div class="special-footer">
+                <span class="special-badge">{{ item.tag }}</span>
+                <button type="button" class="btn-order-quick" data-order-item="{{ item.title }}" data-order-price="{{ item.price }}">
+                  <i class="fa-solid fa-cart-plus"></i> Đặt món
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Customer Testimonials -->
+        <div class="testimonials-section" id="testimonials">
+          <h2 class="section-subtitle-serif" style="font-size: 20px;">
+            <i class="fa-solid fa-quote-left" style="color: var(--accent-gold); margin-right: 6px;"></i>
+            Cảm Nhận Từ Thực Khách
+          </h2>
+          <div class="testimonial-grid">
+            {% for t in testimonials %}
+            <div class="testimonial-card">
+              <div class="stars">
+                {% for i in range(t.rating) %}
+                <i class="fa-solid fa-star"></i>
+                {% endfor %}
+              </div>
+              <p class="quote">"{{ t.comment }}"</p>
+              <div class="author">— {{ t.name }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Location & Map Card -->
+        <div class="specials-section" id="location" style="background:#fdfcf9;">
+          <h2 class="section-subtitle-serif" style="font-size: 20px; margin-bottom: 12px;">
+            <i class="fa-solid fa-map-location-dot" style="color: var(--primary-green); margin-right: 6px;"></i>
+            Vị Trí &amp; Đường Đi Đến Food Shoppe
+          </h2>
+          <div style="background: #eadecb; border-radius: 8px; height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; border: 1px solid #d0bea0;">
+            <i class="fa-solid fa-store" style="font-size: 32px; color: var(--primary-green); margin-bottom: 10px;"></i>
+            <h4 style="font-family:'Playfair Display', serif; font-size:18px; color:var(--text-dark);">124 Gourmet Boulevard, Deli District</h4>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Có bãi đỗ xe miễn phí cho khách hàng &amp; không gian bàn ngoài trời.</p>
+            <a href="https://maps.google.com" target="_blank" style="margin-top: 10px; display: inline-block; background: var(--primary-green); color: #fff; text-decoration: none; padding: 6px 16px; border-radius: 4px; font-size: 13px; font-weight: 600;">
+              <i class="fa-solid fa-directions"></i> Mở Google Maps
+            </a>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      <p>© 2026 Food Shoppe • Deli • Market • Catering. All rights reserved.</p>
+      <p style="margin-top: 4px; font-size: 12px; opacity: 0.85;">Dịch vụ ẩm thực thủ công tươi ngon &amp; nguyên liệu hảo hạng mỗi ngày.</p>
+    </footer>
+  </div>
+
+  <!-- ==========================================================================
+       MODALS
+       ========================================================================== -->
+  
+  <!-- 360 Virtual Tour Modal -->
+  <div class="modal-backdrop" id="tourModal">
+    <div class="modal-box" style="max-width: 800px;">
+      <button type="button" class="modal-close-btn" aria-label="Đóng">&times;</button>
+      <h3 style="font-family:'Playfair Display', serif; color:var(--primary-green); font-size:22px; margin-bottom:6px;">
+        <i class="fa-solid fa-vr-cardboard"></i> Tour 360° Trực Tuyến - Food Shoppe
+      </h3>
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">Khám phá quầy deli, bánh nướng thơm lừng, kệ phô mai và các món ngon tại cửa hàng.</p>
+      
+      <div style="position:relative; border-radius:8px; overflow:hidden; border:2px solid #ecd8ba;">
+        <img src="{{ url_for('static', filename='images/interior_tour.jpg') }}" alt="Shop Interior" style="width:100%; height:380px; object-fit:cover; display:block;">
+        <div style="position:absolute; bottom:12px; left:12px; right:12px; background:rgba(0,0,0,0.7); backdrop-filter:blur(5px); color:#fff; padding:10px 14px; border-radius:6px; font-size:12px; display:flex; justify-content:space-between; align-items:center;">
+          <span><i class="fa-solid fa-circle-info" style="color:#e5be58;"></i> Đang xem: Gian hàng phô mai thủ công &amp; gia vị nhập khẩu</span>
+          <span style="background:var(--primary-green); padding:3px 8px; border-radius:4px; font-weight:700;">Live HD</span>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+        <button type="button" class="btn-open-tour modal-close-btn-inline" style="background:#e8dec8; color:#333; border:none; padding:8px 16px;">Đóng</button>
+        <button type="button" class="btn-open-tour" data-order-item="Tour Đặt Bàn Trực Tiếp" data-order-price="Miễn phí" onclick="document.getElementById('tourModal').classList.remove('active');">
+          <i class="fa-solid fa-calendar-check"></i> Đặt Bàn / Ghé Thăm Ngay
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Storefront Lightbox Modal -->
+  <div class="modal-backdrop" id="imageModal">
+    <div class="modal-box" style="max-width: 760px; padding: 14px;">
+      <button type="button" class="modal-close-btn" aria-label="Đóng">&times;</button>
+      <img src="{{ url_for('static', filename='images/storefront.jpg') }}" alt="Food Shoppe Storefront Full" style="width:100%; border-radius:6px; display:block;">
+      <div style="padding: 10px 4px 0 4px; display:flex; justify-content:space-between; align-items:center;">
+        <h4 style="font-family:'Playfair Display', serif; color:var(--primary-green); font-size:16px;">Mặt tiền Food Shoppe - Không gian ấm áp &amp; thân thiện</h4>
+        <span style="font-size:12px; color:var(--text-muted);">Mở cửa: 9:00 AM - 7:00 PM</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Order & Catering Modal -->
+  <div class="modal-backdrop" id="orderModal">
+    <div class="modal-box">
+      <button type="button" class="modal-close-btn" aria-label="Đóng">&times;</button>
+      <h3 style="font-family:'Playfair Display', serif; color:var(--primary-green); font-size:22px; margin-bottom:4px;">
+        <i class="fa-solid fa-basket-shopping"></i> Đặt Món / Tư Vấn Nhanh
+      </h3>
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
+        Mục đã chọn: <strong id="orderItemTitle" style="color:var(--primary-green-dark);">Món ăn</strong>
+      </p>
+
+      <form id="orderForm">
+        <input type="hidden" id="orderItemNameInput" value="">
+        
+        <div class="form-group">
+          <label class="form-label" for="custName">Họ và tên của bạn:</label>
+          <input type="text" id="custName" class="form-control" placeholder="Ví dụ: Nguyễn Văn A" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="custPhone">Số điện thoại liên hệ:</label>
+          <input type="tel" id="custPhone" class="form-control" placeholder="Ví dụ: 0912 345 678" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="custNotes">Ghi chú hoặc yêu cầu đặc biệt (tuỳ chọn):</label>
+          <textarea id="custNotes" class="form-control" rows="3" placeholder="Ví dụ: Giao lúc 11h30, không hành tây, thêm sốt mù tạt..."></textarea>
+        </div>
+
+        <button type="submit" class="btn-submit-form">
+          <i class="fa-solid fa-paper-plane"></i> Gửi Yêu Cầu Đặt Hàng
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
