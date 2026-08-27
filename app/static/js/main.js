@@ -269,23 +269,18 @@ async function fetchAndDisplayDishes(restaurantId, restaurantName, doScroll = tr
 
                 grid.querySelectorAll('.btn-order-quick').forEach(btn => {
                     btn.addEventListener('click', async (e) => {
-                        e.preventDefault(); // Ngăn trình duyệt nhảy trang
+                        e.preventDefault();
 
-                        // 1. Lấy thông tin từ các thuộc tính data- vừa thêm ở trên
                         const resId = btn.getAttribute('data-res-id');
                         const dishId = btn.getAttribute('data-dish-id');
                         const name = btn.getAttribute('data-name');
 
-                        // Chuyển giá tiền từ chuỗi sang số
                         const price = parseFloat(btn.getAttribute('data-price'));
 
-                        // 2. Gọi hàm addToCart để đẩy dữ liệu lên API
                         addToCart(resId, dishId, name, price);
 
-                        // 3. Hiển thị thông báo Toast ở góc màn hình
                         showToast(`Đã thêm <b>${name}</b> vào giỏ hàng!`);
 
-                        // (Tuỳ chọn) Đổi trạng thái nút tạm thời để báo hiệu đã click thành công
                         const originalHtml = btn.innerHTML;
                         btn.innerHTML = `<i class="fa-solid fa-check"></i> Đã thêm`;
                         btn.style.backgroundColor = 'var(--primary-green-dark)';
@@ -295,7 +290,7 @@ async function fetchAndDisplayDishes(restaurantId, restaurantName, doScroll = tr
                             btn.innerHTML = originalHtml;
                             btn.style.backgroundColor = '';
                             btn.style.color = '';
-                        }, 1500); // Trả lại nút cũ sau 1.5 giây
+                        }, 1500);
                     });
                 });
             }

@@ -7,9 +7,6 @@ from app.utils import get_cart_stats, get_res_total
 
 @app.route('/')
 def index():
-    print("current_user:", current_user)
-    print("authenticated:", current_user.is_authenticated)
-
     return render_template('index.html')
 
 @app.route('/logout')
