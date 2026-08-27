@@ -1,6 +1,8 @@
 import enum
 from datetime import datetime
 from decimal import Decimal
+
+from flask_login import UserMixin
 from werkzeug.security import generate_password_hash
 from app import db
 
@@ -38,7 +40,7 @@ class BaseModel(db.Model):
     is_active = db.Column(db.Boolean, default=True, nullable=False, index=True)
 
 
-class User(BaseModel):
+class User(BaseModel, UserMixin):
     __tablename__ = 'users'
     
     username = db.Column(db.String(50), unique=True, nullable=False, index=True)

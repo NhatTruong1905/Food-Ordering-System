@@ -1,7 +1,7 @@
 import os
 import urllib.parse
-
 from dotenv import load_dotenv
+from flask_login import LoginManager
 
 load_dotenv()
 
@@ -12,7 +12,7 @@ app = Flask(__name__, template_folder='templates', static_folder='static')
 
 app.secret_key = os.getenv('SECRET_KEY')
 
-db_user = urllib.parse.quote_plus(os.getenv('DB_USERNAME', 'root'))
+db_user = urllib.parse.quote_plus(os.getenv('DB_USER', 'root'))
 db_pass = urllib.parse.quote_plus(os.getenv('DB_PASSWORD', ''))
 db_host = os.getenv('DB_HOST', 'localhost')
 db_port = os.getenv('DB_PORT', '3306')
@@ -24,4 +24,5 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 
 db = SQLAlchemy(app=app)
+login = LoginManager(app=app)
 

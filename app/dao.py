@@ -1,7 +1,19 @@
+import hashlib
 from sqlalchemy import or_
-from app import db
-from app.models import Restaurant, Dish
+from werkzeug.security import check_password_hash
+from app.models import Restaurant, Dish, User
 
+
+def auth_user(username, password):
+    user = User.query.filter_by(username=username).first()
+
+    if user and check_password_hash(user.password_hash, password):
+        return user
+
+    return None
+
+def get_user_by_id(id):
+    return User.query.get(id)
 
 def get_restaurant(name=None, address=None, page=1, page_size=6):
     query = Restaurant.query.filter(Restaurant.is_active.is_(True))
@@ -49,6 +61,3 @@ def get_dishes_by_restaurant(restaurant_id):
         Dish.restaurant_id == restaurant_id,
         Dish.is_active.is_(True)
     ).all()
-
-
-
