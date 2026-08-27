@@ -1,11 +1,8 @@
-/* ==========================================================================
-   Food Shoppe - Modern Classic Deli & Market Styling
-   ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Color Palette */
+
   --bg-outer-dark: #6e593e;
   --bg-outer-light: #8d7554;
   --bg-cream: #faf5e8;
@@ -45,7 +42,6 @@
   --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Reset & Base */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -56,8 +52,7 @@ body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: var(--text-dark);
   background-color: var(--bg-outer-dark);
-  /* Vintage patterned background matching reference */
-  background-image: 
+  background-image:
     radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
     radial-gradient(circle at 0% 0%, rgba(0, 0, 0, 0.15) 1px, transparent 1px),
     linear-gradient(135deg, #745f44 0%, #876f51 50%, #68533b 100%);
@@ -67,22 +62,17 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 15px 40px 15px;
+  padding: 0 20px 40px 20px;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Main Canvas Wrapper */
 .site-wrapper {
   width: 100%;
-  max-width: 1100px;
+  max-width: 1440px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
 }
-
-/* ==========================================================================
-   Navigation Bar
-   ========================================================================== */
 .main-nav {
   background: linear-gradient(180deg, #82522b 0%, #673f1d 100%);
   border-bottom: 2px solid #502e11;
@@ -139,9 +129,6 @@ body {
   padding: 8px;
 }
 
-/* ==========================================================================
-   Header & Brand Banner
-   ========================================================================== */
 .site-header {
   margin-top: 15px;
   margin-bottom: 18px;
@@ -165,19 +152,16 @@ body {
 }
 
 .brand-svg {
-  max-width: 820px;
+  max-width: 980px;
   width: 100%;
   height: auto;
   display: block;
 }
 
-/* ==========================================================================
-   Main Content Layout (Two Column Container)
-   ========================================================================== */
 .main-container {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 22px;
+  grid-template-columns: 310px 1fr;
+  gap: 24px;
   align-items: start;
 }
 
@@ -784,6 +768,360 @@ body {
 }
 
 /* ==========================================================================
+   Restaurants Section & Live Search Styling
+   ========================================================================== */
+.restaurants-section {
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  padding: 22px;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+}
+
+.restaurant-search-box {
+  margin: 16px 0 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.search-input-wrapper .search-icon {
+  position: absolute;
+  left: 16px;
+  color: var(--primary-green);
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.restaurant-search-input {
+  width: 100%;
+  padding: 13px 44px 13px 44px;
+  font-size: 14.5px;
+  font-family: inherit;
+  border: 2px solid #e0d6c3;
+  border-radius: var(--radius-pill);
+  background-color: #faf7f0;
+  color: var(--text-dark);
+  transition: var(--transition);
+  outline: none;
+}
+
+.restaurant-search-input:focus {
+  border-color: var(--primary-green);
+  background-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(35, 89, 45, 0.12);
+}
+
+.btn-clear-search {
+  position: absolute;
+  right: 14px;
+  background: #ddd3be;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #555;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  transition: var(--transition);
+}
+
+.btn-clear-search:hover {
+  background: var(--accent-coral);
+  color: #fff;
+}
+
+.filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.filter-pill {
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid #d4c8af;
+  border-radius: var(--radius-pill);
+  background: #fdfbf7;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.filter-pill:hover {
+  border-color: var(--primary-green);
+  color: var(--primary-green);
+  background: #eef5eb;
+}
+
+.filter-pill.active {
+  background: var(--primary-green);
+  color: #ffffff;
+  border-color: var(--primary-green);
+  box-shadow: 0 2px 6px rgba(35, 89, 45, 0.25);
+}
+
+.restaurant-count-badge {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--primary-green-dark);
+  background: #eef5eb;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid #c9dec3;
+  white-space: nowrap;
+}
+
+.restaurants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.restaurant-card {
+  background: #ffffff;
+  border: 1px solid #ebd9bf;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+  transition: var(--transition);
+}
+
+.restaurant-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent-gold);
+}
+
+.restaurant-card-img-wrap {
+  position: relative;
+  height: 160px;
+  overflow: hidden;
+}
+
+.restaurant-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.restaurant-card:hover .restaurant-card-img {
+  transform: scale(1.05);
+}
+
+.restaurant-status-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  backdrop-filter: blur(4px);
+}
+
+.restaurant-status-badge.open {
+  background: rgba(35, 89, 45, 0.88);
+  color: #a8f5b8;
+}
+
+.restaurant-status-badge.open i {
+  font-size: 6px;
+  color: #42f569;
+}
+
+.restaurant-rating-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #f7c948;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.restaurant-card-body {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.restaurant-name {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary-green-dark);
+  margin-bottom: 4px;
+}
+
+.restaurant-address {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.restaurant-desc {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.45;
+  margin-bottom: 12px;
+  flex: 1;
+}
+
+.restaurant-meta-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.meta-tag {
+  font-size: 11px;
+  background: #f4ecdc;
+  color: #634d28;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.restaurant-card-footer {
+  padding: 12px 16px;
+  background: #fdfaf4;
+  border-top: 1px solid #ebd9bf;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.restaurant-distance {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.btn-view-restaurant-menu {
+  background: var(--primary-green);
+  color: #ffffff;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-view-restaurant-menu:hover {
+  background: var(--primary-green-light);
+  transform: translateY(-1px);
+}
+
+.no-results-box {
+  background: #fcf9f2;
+  border: 1px dashed #d4c4a5;
+  border-radius: var(--radius-md);
+  padding: 36px 20px;
+  text-align: center;
+}
+
+/* ==========================================================================
+   Pagination Styling
+   ========================================================================== */
+.pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #ebd9bf;
+  flex-wrap: wrap;
+}
+
+.pagination-wrapper:empty {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  border: 1px solid #d4c4a5;
+  background: #ffffff;
+  color: var(--text-dark);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--primary-green);
+  color: #ffffff;
+  border-color: var(--primary-green);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(35, 89, 45, 0.2);
+}
+
+.pagination-btn.active {
+  background: var(--primary-green);
+  color: #ffffff;
+  border-color: var(--primary-green);
+  box-shadow: 0 2px 8px rgba(35, 89, 45, 0.3);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #f5efe3;
+  border-color: #e0d5c1;
+}
+
+.pagination-info {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-left: 12px;
+}
+
+/* ==========================================================================
    Responsive Breakpoints
    ========================================================================== */
 @media (max-width: 860px) {
@@ -826,3 +1164,4 @@ body {
     padding: 14px;
   }
 }
+
