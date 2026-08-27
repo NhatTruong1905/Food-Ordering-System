@@ -49,3 +49,6 @@ def get_dishes_by_restaurant(restaurant_id):
         Dish.restaurant_id == restaurant_id,
         Dish.is_active.is_(True)
     ).all()
+
+
+
