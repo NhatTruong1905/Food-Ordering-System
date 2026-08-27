@@ -25,6 +25,12 @@
             <a href="#about" class="nav-link"><i class="fa-solid fa-circle-info"></i> About Us</a>
             <a href="#gallery" class="nav-link"><i class="fa-solid fa-vr-cardboard"></i> Virtual Tour</a>
             <a href="#testimonials" class="nav-link"><i class="fa-solid fa-comments"></i> Testimonials</a>
+            <a href="/cart" class="nav-link"><i class="fa-solid fa-cart-shopping"></i> Giỏ hàng</a>
+            {% if current_user.is_authenticated %}
+            <a href="/logout" class="nav-link active">Đăng xuất</a>
+            {% else %}
+            <a href="/login" class="nav-link active"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</a>
+            {% endif %}
         </div>
     </nav>
 
@@ -394,6 +400,46 @@
     </div>
 </div>
 
+<div class="modal-backdrop" id="cartModal">
+    <div class="modal-box cart-modal">
+
+        <button type="button"
+                class="modal-close-btn"
+                id="btnCloseCart">
+            &times;
+        </button>
+
+        <h3 class="cart-title">
+            <i class="fa-solid fa-cart-shopping"></i>
+            Giỏ hàng
+        </h3>
+
+        <div id="cartItems" class="cart-items">
+        </div>
+
+        <div id="emptyCart" class="empty-cart">
+            <i class="fa-solid fa-cart-shopping"></i>
+            <p>Giỏ hàng đang trống</p>
+        </div>
+
+        <div class="cart-summary">
+            <div class="cart-total-row">
+                <span>Tổng cộng:</span>
+                <strong id="cartTotal">0 ₫</strong>
+            </div>
+
+            <button type="button"
+                    class="btn-submit-form"
+                    id="btnCheckout">
+                <i class="fa-solid fa-check"></i>
+                Đặt hàng
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/cart.js') }}"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

@@ -1165,3 +1165,170 @@ body {
   }
 }
 
+/* Cart Page Layout */
+.bg-light { background-color: #f8f9fa; }
+.cart-page-wrapper {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+/* Các section nhà hàng */
+.restaurant-cart-section {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+
+.rc-header {
+    background-color: #faf7f2;
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+}
+
+.rc-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.btn-clear-cart {
+    background: none;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* Item trong giỏ */
+.rc-body {
+    padding: 0 24px;
+}
+
+.cart-page-item {
+    display: flex;
+    align-items: center;
+    padding: 20px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.cart-page-item:last-child {
+    border-bottom: none;
+}
+
+.cpi-img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-right: 20px;
+}
+
+.cpi-details {
+    flex: 1;
+}
+.cpi-name { margin: 0 0 8px 0; font-size: 16px; font-weight: 600; }
+.cpi-price { margin: 0; color: #666; font-size: 14px; }
+
+/* Control & Actions */
+.cpi-actions {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.qty-control {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    overflow: hidden;
+}
+.qty-control button {
+    background: #f8f9fa;
+    border: none;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    color: #555;
+}
+.qty-control button:hover { background: #eee; }
+.qty-control input {
+    width: 40px;
+    text-align: center;
+    border: none;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+    height: 32px;
+    font-weight: bold;
+}
+
+.cpi-subtotal {
+    font-weight: 600;
+    color: #d89f28; /* Màu vàng cam theme của bạn */
+    min-width: 100px;
+    text-align: right;
+}
+
+.btn-delete-item {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 18px;
+    cursor: pointer;
+}
+.btn-delete-item:hover { color: #dc3545; }
+
+/* Footer tổng tiền từng nhà hàng */
+.rc-footer {
+    padding: 20px 24px;
+    background-color: #fafafa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #eee;
+}
+.rc-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.rc-total-price {
+    font-size: 18px;
+    color: #d89f28;
+}
+
+.btn-checkout-primary {
+    background-color: #d89f28;
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.btn-checkout-primary:hover {
+    background-color: #c48c1e;
+}
+
+/* Empty State */
+.empty-cart-page {
+    text-align: center;
+    padding: 80px 20px;
+}
+.btn-primary {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 10px 20px;
+    background: #d89f28;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: bold;
+}

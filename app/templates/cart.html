@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giỏ Hàng</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Playfair+Display:ital,wght@0,500;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="site-wrapper">
+    <nav class="main-nav" id="topNav">
+        <div class="nav-container">
+            <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+            <a href="/#restaurants" class="nav-link"><i class="fa-solid fa-store"></i> Restaurant</a>
+            <a href="/#about" class="nav-link"><i class="fa-solid fa-circle-info"></i> About Us</a>
+            <a href="/cart" class="nav-link active">
+                <i class="fa-solid fa-cart-shopping"></i> Giỏ hàng
+                <span class="cart-counter" style="background:#cda434; color:#fff; padding:2px 7px; border-radius:10px; font-size:12px;">
+                    {{ cart_stats.total_quantity if cart_stats else 0 }}
+                </span>
+            </a>
+            {% if current_user and current_user.is_authenticated %}
+                <span class="nav-link" style="color: var(--accent-gold, #cda434); font-weight: 600;">
+                    <i class="fa-solid fa-user-circle"></i> {{ current_user.username }}
+                </span>
+                <a href="/logout" class="nav-link" style="color: #c93b2b; margin-left: 10px;">
+                    <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                </a>
+            {% else %}
+                <a href="/login?next=/cart" class="nav-link"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</a>
+            {% endif %}
+        </div>
+    </nav>
+
+
+    <header class="site-header">
+        <div class="brand-banner">
+            <a href="/">
+                <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="FOOD SHOPPE" class="brand-svg">
+            </a>
+        </div>
+    </header>
+
+    <main class="main-container" style="max-width: 900px; margin: 30px auto; padding: 0 15px;">
+        <h2 style="font-family:'Cinzel', serif; color:var(--primary-green-dark, #2c4c3b); margin-bottom: 20px; text-align:center;">
+            <i class="fa-solid fa-basket-shopping" style="color:#cda434;"></i> GIỎ HÀNG CỦA BẠN
+        </h2>
+
+        {% set total_qty = cart_stats.total_quantity if cart_stats else 0 %}
+
+
+        <div id="empty-cart-msg" style="text-align:center; padding: 50px 20px; background: #faf6ea; border: 2px dashed #ecd8ba; border-radius: 12px; {% if total_qty > 0 %}display:none;{% endif %}">
+            <i class="fa-solid fa-cart-flatbed" style="font-size: 48px; color: #cda434; margin-bottom: 15px;"></i>
+            <h3 style="font-family:'Playfair Display', serif; color: #444;">Giỏ hàng của bạn đang trống</h3>
+            <p style="color: #777; margin: 10px 0 20px;">Hãy chọn các món ăn hấp dẫn từ hệ thống nhà hàng đối tác!</p>
+            <a href="/" style="display:inline-block; background:var(--primary-green, #3a6351); color:#fff; padding:10px 22px; border-radius:6px; text-decoration:none; font-weight:600;">
+                <i class="fa-solid fa-utensils"></i> Khám Phá Thực Đơn
+            </a>
+        </div>
+
+
+        <div id="cart-content-wrapper" {% if total_qty == 0 %}style="display:none;"{% endif %}>
+
+            {# DUYỆT TỪNG NHÀ HÀNG TRONG SESSION #}
+            {% if session.get('cart') %}
+            {% for res_id, res_data in session['cart'].items() %}
+                {% if res_data.get('items') %}
+                <div class="restaurant-cart-card" id="cart-res-{{ res_id }}" style="background: #faf6ea; border: 2px solid #ecd8ba; border-radius: 10px; margin-bottom: 25px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+
+                    <div style="border-bottom: 2px solid #ebd9bf; padding-bottom: 10px; margin-bottom: 15px; display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="font-family:'Playfair Display', serif; color: var(--primary-green-dark, #2c4c3b); margin:0;">
+                            <i class="fa-solid fa-store" style="color:#cda434;"></i> Nhà hàng #{{ res_id }}
+                        </h3>
+                    </div>
+
+
+                    <div class="cart-items-list">
+                        {% set ns = namespace(res_total=0) %}
+                        {% for dish_id, item in res_data['items'].items() %}
+                        {% set ns.res_total = ns.res_total + (item.price * item.quantity) %}
+                        <div class="cart-item-row" id="cart-item-{{ res_id }}-{{ dish_id }}" style="display: flex; align-items: center; justify-content: space-between; background: #fff; padding: 12px 16px; border: 1px solid #ebd9bf; border-radius: 8px; margin-bottom: 10px;">
+
+                            <div style="flex: 2;">
+                                <h4 style="margin: 0; font-size: 15px; color: #333;">{{ item.name }}</h4>
+                                <span style="font-size: 13px; color: #777;">Đơn giá: {{ "{:,.0f}".format(item.price) }} ₫</span>
+                            </div>
+
+                            <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                                <label style="font-size: 12px; color: #555;">SL:</label>
+                                <input type="number" value="{{ item.quantity }}" min="1"
+                                       onchange="updateCart('{{ res_id }}', '{{ dish_id }}', this)"
+                                       style="width: 55px; padding: 5px; border: 1px solid #ebd9bf; border-radius: 4px; text-align: center; font-weight: bold;">
+                            </div>
+
+                            <div style="flex: 1; text-align: right; font-weight: bold; color: var(--primary-green-dark, #2c4c3b);">
+                                <span id="subtotal-{{ res_id }}-{{ dish_id }}">
+                                    {{ "{:,.0f}".format(item.price * item.quantity) }}
+                                </span> ₫
+                            </div>
+
+                            <div style="margin-left: 15px;">
+                                <button onclick="deleteCart('{{ res_id }}', '{{ dish_id }}')"
+                                        style="background: none; border: none; color: #c93b2b; cursor: pointer; font-size: 16px;" title="Xóa món này">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 12px; border-top: 1px dashed #ebd9bf;">
+                        <div>
+                            <strong>Tổng nhà hàng: </strong>
+                            <span id="res-amount-{{ res_id }}" style="color: #c93b2b; font-size: 18px; font-weight: bold; margin-left: 5px;">
+                                {{ "{:,.0f}".format(ns.res_total) }}
+                            </span> ₫
+                        </div>
+
+                        {% if current_user and current_user.is_authenticated %}
+                            <button type="button" onclick="payRestaurant('{{ res_id }}')" style="background: #cda434; color: #000; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 13.5px;">
+                                <i class="fa-solid fa-bag-shopping"></i> Đặt hàng nhà hàng này
+                            </button>
+                        {% else %}
+                            <a href="/login?next=/cart" style="background: #c93b2b; color: #fff; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 12.5px; font-weight: 600;">
+                                <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập để đặt
+                            </a>
+                        {% endif %}
+                    </div>
+
+                </div>
+                {% endif %}
+            {% endfor %}
+            {% endif %}
+
+
+            <div style="background: #2c4c3b; color: #fff; border-radius: 10px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+                <div>
+                    <h3 style="margin: 0; font-family:'Cinzel', serif; font-size: 16px; color: #e5be58;">TỔNG TOÀN BỘ GIỎ HÀNG</h3>
+                    <span style="font-size: 13px; opacity: 0.85;">Tất cả nhà hàng</span>
+                </div>
+
+                <div style="text-align: right;">
+                    <div style="font-size: 20px; font-weight: bold; color: #fff;">
+                        <span class="cart-amount">{{ "{:,.0f}".format(cart_stats.total_amount if cart_stats else 0) }}</span> ₫
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+
+    <footer class="site-footer">
+        <p>© 2026 Food Shoppe • Deli • Market • Catering. All rights reserved.</p>
+    </footer>
+</div>
+
+<script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+</body>
+</html>

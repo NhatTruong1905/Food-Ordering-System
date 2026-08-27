@@ -255,7 +255,11 @@ async function fetchAndDisplayDishes(restaurantId, restaurantName, doScroll = tr
               </div>
               <div class="special-footer" style="margin-top:10px;">
                 <span class="special-badge">${escapeHtml(d.category_name || 'Món ngon')}</span>
-                <button type="button" class="btn-order-quick" data-order-item="${escapeHtml(d.name)}" data-order-price="${d.price_formatted}">
+                <button type="button" class="btn-order-quick"
+                        data-res-id="${restaurantId}"
+                        data-dish-id="${d.id}"
+                        data-name="${escapeHtml(d.name)}"
+                        data-price="${d.price}">
                   <i class="fa-solid fa-cart-plus"></i> Đặt món
                 </button>
               </div>
@@ -264,14 +268,29 @@ async function fetchAndDisplayDishes(restaurantId, restaurantName, doScroll = tr
                 }).join('');
 
                 grid.querySelectorAll('.btn-order-quick').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const itemName = btn.getAttribute('data-order-item');
-                        const itemTitleEl = document.getElementById('orderItemTitle');
-                        const itemNameInput = document.getElementById('orderItemNameInput');
-                        const orderModal = document.getElementById('orderModal');
-                        if (itemTitleEl) itemTitleEl.innerText = itemName;
-                        if (itemNameInput) itemNameInput.value = itemName;
-                        if (orderModal) orderModal.classList.add('active');
+                    btn.addEventListener('click', async (e) => {
+                        e.preventDefault();
+
+                        const resId = btn.getAttribute('data-res-id');
+                        const dishId = btn.getAttribute('data-dish-id');
+                        const name = btn.getAttribute('data-name');
+
+                        const price = parseFloat(btn.getAttribute('data-price'));
+
+                        addToCart(resId, dishId, name, price);
+
+                        showToast(`Đã thêm <b>${name}</b> vào giỏ hàng!`);
+
+                        const originalHtml = btn.innerHTML;
+                        btn.innerHTML = `<i class="fa-solid fa-check"></i> Đã thêm`;
+                        btn.style.backgroundColor = 'var(--primary-green-dark)';
+                        btn.style.color = 'white';
+
+                        setTimeout(() => {
+                            btn.innerHTML = originalHtml;
+                            btn.style.backgroundColor = '';
+                            btn.style.color = '';
+                        }, 1500);
                     });
                 });
             }
@@ -499,3 +518,4 @@ function initRestaurantSearch() {
         });
     });
 }
+
