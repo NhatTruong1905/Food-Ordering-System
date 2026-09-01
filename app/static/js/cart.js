@@ -12,12 +12,39 @@ function addToCart(restaurantId, dishId, name, price) {
     })
     .then(res => res.json())
     .then(data => {
-        if (data.error) return alert("Lỗi: " + data.error);
+        if (data.error) {
+            if (typeof showToast === 'function') {
+                showToast("Lỗi: " + data.error);
+            } else {
+                alert("Lỗi: " + data.error);
+            }
+            return;
+        }
 
+        const totalQty = (data.stats && typeof data.stats.total_quantity !== 'undefined')
+            ? data.stats.total_quantity
+            : 0;
 
+        // Cập nhật tất cả các badge số lượng trên giao diện
         let counters = document.querySelectorAll('.cart-counter');
-        counters.forEach(c => c.innerText = data.stats.total_quantity);
-        alert("Đã thêm món vào giỏ hàng!");
+        counters.forEach(c => {
+            c.innerText = totalQty;
+        });
+
+        // Hiệu ứng nảy (bounce & pop) cho nút giỏ hàng tròn dạng chatbot
+        const floatingCart = document.getElementById('floatingCartBtn');
+        if (floatingCart) {
+            floatingCart.classList.remove('cart-bump');
+            void floatingCart.offsetWidth; // Trigger reflow để chạy lại animation
+            floatingCart.classList.add('cart-bump');
+        }
+
+        if (typeof showToast === 'function') {
+            showToast(`Đã thêm <b>${name}</b> vào giỏ hàng!`);
+        }
+    })
+    .catch(err => {
+        console.error('Lỗi khi thêm vào giỏ hàng:', err);
     });
 }
 

@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Shoppe | Về Chúng Tôi (About Us)</title>
+    <meta name="description"
+          content="Giới thiệu Đề tài Hệ Thống Đặt Món Ăn Trực Tuyến - Nền tảng trung gian kết nối Khách hàng và Nhà hàng được thực hiện bởi Nguyễn Đinh Nhật Trường và Nguyễn Văn Tuấn.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        /* ==========================================================================
+           ABOUT US PAGE - POLISHED DESIGN & HIGH CONTRAST THEME
+           ========================================================================== */
+        
+        .main-container.single-column {
+            display: block !important;
+            width: 100% !important;
+            max-width: 1040px !important;
+            margin: 25px auto !important;
+            padding: 0 16px;
+        }
+
+        .about-main-wrapper {
+            background: #ffffff;
+            border: 2px solid #e0d0b8;
+            border-radius: 16px;
+            padding: 40px 36px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Hero Banner */
+        .about-hero-box {
+            background: linear-gradient(135deg, #faf5eb 0%, #f4ebd9 100%);
+            border: 1.5px solid #dfcfb7;
+            border-radius: 14px;
+            padding: 36px 30px;
+            text-align: center;
+            margin-bottom: 36px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .about-hero-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #23592d 0%, #c99834 50%, #23592d 100%);
+        }
+
+        .topic-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #1b3d27;
+            color: #fdfaf3;
+            padding: 6px 18px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 8px rgba(27, 61, 39, 0.25);
+        }
+
+        .about-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            color: #1a3826;
+            font-size: 30px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            line-height: 1.35;
+        }
+
+        .about-subtitle {
+            font-size: 15.5px;
+            color: #2b251f;
+            line-height: 1.7;
+            max-width: 840px;
+            margin: 0 auto;
+        }
+
+        /* Section Headings */
+        .section-header-wrap {
+            text-align: center;
+            margin-bottom: 26px;
+        }
+
+        .section-tag {
+            display: inline-block;
+            background: #f0e6d2;
+            color: #734f10;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 4px 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .section-main-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            color: #193824;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .section-desc {
+            font-size: 14px;
+            color: #4a4237;
+        }
+
+        /* Author Cards */
+        .authors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .author-card {
+            background: #fdfbf7;
+            border: 1.5px solid #e2d2ba;
+            border-radius: 14px;
+            padding: 28px 24px;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+
+        .author-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            border-color: #c99834;
+        }
+
+        .author-avatar-wrap {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1b3d27 0%, #102618 100%);
+            color: #f7e6c4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 16px;
+            border: 3px solid #c99834;
+            box-shadow: 0 6px 14px rgba(27, 61, 39, 0.25);
+        }
+
+        .author-name {
+            font-family: 'Playfair Display', Georgia, serif;
+            color: #193824;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .author-role-pill {
+            display: inline-block;
+            background: #1b3d27;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 14px;
+            border-radius: 20px;
+            margin-bottom: 14px;
+        }
+
+        .author-bio {
+            font-size: 13.5px;
+            color: #332d24;
+            line-height: 1.6;
+        }
+
+        /* Two-Column Feature Breakdown (Customer vs Restaurant) */
+        .features-comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .feature-column-card {
+            background: #fdfbf7;
+            border: 1.5px solid #e0d0b8;
+            border-radius: 14px;
+            padding: 26px 22px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .feature-col-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 14px;
+            margin-bottom: 18px;
+            border-bottom: 2px solid #ecd8ba;
+        }
+
+        .feature-col-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .icon-customer {
+            background: #1b3d27;
+            color: #ffffff;
+        }
+
+        .icon-restaurant {
+            background: #c99834;
+            color: #1a1a1a;
+        }
+
+        .feature-col-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 19px;
+            font-weight: 700;
+            color: #193824;
+            margin: 0;
+        }
+
+        .feature-col-sub {
+            font-size: 12.5px;
+            color: #594f42;
+            margin-top: 2px;
+        }
+
+        /* Item Row */
+        .feature-row-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background: #ffffff;
+            border: 1px solid #ebdcc5;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .feature-row-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .feature-row-item:hover {
+            border-color: #c99834;
+            transform: translateX(3px);
+        }
+
+        .feature-row-icon {
+            font-size: 16px;
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+
+        .icon-green { color: #1e5a2b; }
+        .icon-gold { color: #ab7a16; }
+
+        .feature-row-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1b3d27;
+            margin-bottom: 3px;
+        }
+
+        .feature-row-desc {
+            font-size: 13px;
+            color: #383025;
+            line-height: 1.55;
+        }
+
+        /* Workflow 4 Steps Banner */
+        .workflow-box {
+            background: #f7f2e7;
+            border: 1.5px solid #decbb2;
+            border-radius: 14px;
+            padding: 28px 22px;
+            margin-bottom: 40px;
+        }
+
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .workflow-step-card {
+            background: #ffffff;
+            border: 1px solid #ebd9c0;
+            border-radius: 10px;
+            padding: 16px 14px;
+            text-align: center;
+            position: relative;
+        }
+
+        .step-number-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #1b3d27;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+        }
+
+        .step-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #193824;
+            margin-bottom: 4px;
+        }
+
+        .step-desc {
+            font-size: 12px;
+            color: #4a4033;
+            line-height: 1.45;
+        }
+
+        /* AI Features Section */
+        .ai-container-box {
+            background: linear-gradient(135deg, #183823 0%, #0f2416 100%);
+            border: 2px solid #ecd8ba;
+            border-radius: 14px;
+            padding: 34px 28px;
+            margin-bottom: 36px;
+            box-shadow: 0 8px 24px rgba(15, 36, 22, 0.3);
+        }
+
+        .ai-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .ai-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(236, 216, 186, 0.35);
+            border-radius: 12px;
+            padding: 22px 18px;
+            backdrop-filter: blur(4px);
+            transition: all 0.25s ease;
+        }
+
+        .ai-card:hover {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: #ffd269;
+            transform: translateY(-3px);
+        }
+
+        .ai-card-icon {
+            font-size: 26px;
+            color: #ffd269;
+            margin-bottom: 12px;
+        }
+
+        .ai-card-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .ai-card-desc {
+            font-size: 13px;
+            color: #f1f8f3;
+            line-height: 1.6;
+        }
+
+        /* CTA Section */
+        .cta-bottom-card {
+            background: #faf4e6;
+            border: 2px dashed #d6be99;
+            border-radius: 14px;
+            padding: 32px 24px;
+            text-align: center;
+        }
+
+        .cta-btn-primary {
+            background: #1b3d27;
+            color: #ffffff;
+            padding: 12px 26px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 14.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s ease, transform 0.2s ease;
+            box-shadow: 0 4px 12px rgba(27, 61, 39, 0.2);
+        }
+
+        .cta-btn-primary:hover {
+            background: #275939;
+            transform: translateY(-2px);
+            color: #ffffff;
+        }
+
+        .cta-btn-gold {
+            background: #c99834;
+            color: #1a1a1a;
+            padding: 12px 26px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 14.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s ease, transform 0.2s ease;
+            box-shadow: 0 4px 12px rgba(201, 152, 52, 0.25);
+        }
+
+        .cta-btn-gold:hover {
+            background: #ddab43;
+            transform: translateY(-2px);
+            color: #000000;
+        }
+    </style>
+</head>
+<body>
+
+<div class="site-wrapper">
+    <!-- Main Navigation -->
+    <nav class="main-nav" id="topNav">
+        <div class="nav-container">
+            <div class="nav-links-left">
+                <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="/#restaurants" class="nav-link"><i class="fa-solid fa-store"></i> Restaurant</a>
+                <a href="/about" class="nav-link active"><i class="fa-solid fa-circle-info"></i> About Us</a>
+            </div>
+            <div class="nav-auth-right">
+                {% if current_user and current_user.is_authenticated %}
+                <div class="nav-user-greeting">
+                    <i class="fa-solid fa-circle-user"></i>
+                    <span>Chào, <strong>{{ current_user.username }}</strong></span>
+                </div>
+                <a href="/logout" class="nav-logout-btn">
+                    <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                </a>
+                {% else %}
+                <a href="/login" class="nav-login-btn">
+                    <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Logo Banner -->
+    <header class="site-header">
+        <div class="brand-banner">
+            <a href="/">
+                <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="FOOD SHOPPE" class="brand-svg">
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content (Full Width Single Column) -->
+    <main class="main-container single-column">
+
+        <div class="about-main-wrapper">
+
+            <!-- 1. HERO BANNER: GIỚI THIỆU ĐỀ TÀI -->
+            <section class="about-hero-box">
+                <div class="topic-badge">
+                    <i class="fa-solid fa-graduation-cap" style="color: #ffd269;"></i> ĐỀ TÀI 2: HỆ THỐNG ĐẶT MÓN ĂN TRỰC TUYẾN
+                </div>
+                <h1 class="about-title">
+                    Nền Tảng Trung Gian Kết Nối Ẩm Thực
+                </h1>
+                <p class="about-subtitle">
+                    Hệ thống là một <strong>nền tảng trung gian trực tuyến thông minh</strong>, đóng vai trò cầu nối tiện ích giữa khách hàng và các nhà hàng, quán ăn. Giúp khách hàng duyệt chọn món, đặt đồ ăn và thanh toán tức thì; đồng thời hỗ trợ các đối tác nhà hàng quản lý thực đơn và tiếp nhận, xử lý đơn hàng chuyên nghiệp.
+                </p>
+            </section>
+
+            <!-- 2. NHÓM TÁC GIẢ THỰC HIỆN ĐỀ TÀI -->
+            <section style="margin-bottom: 40px;">
+                <div class="section-header-wrap">
+                    <span class="section-tag">Development Team</span>
+                    <h2 class="section-main-title">
+                        <i class="fa-solid fa-users" style="color: #c99834; margin-right: 8px;"></i> Nhóm Tác Giả Thực Hiện
+                    </h2>
+                    <p class="section-desc">Dự án được phân tích, thiết kế và lập trình hoàn thiện bởi nhóm tác giả:</p>
+                </div>
+
+                <div class="authors-grid">
+                    <!-- Tác giả 1: Nguyễn Đinh Nhật Trường -->
+                    <div class="author-card">
+                        <div class="author-avatar-wrap">
+                            <i class="fa-solid fa-user-tie"></i>
+                        </div>
+                        <h3 class="author-name">Nguyễn Đinh Nhật Trường</h3>
+                        <span class="author-role-pill">Kiến Trúc Hệ Thống &amp; Backend Lead</span>
+                        <p class="author-bio">
+                            Phụ trách thiết kế kiến trúc hệ thống tổng thể, phát triển Backend Core với Flask &amp; SQLAlchemy, tối ưu cơ sở dữ liệu và xây dựng luồng xử lý đơn hàng trung gian giữa nhà hàng và khách hàng.
+                        </p>
+                    </div>
+
+                    <!-- Tác giả 2: Nguyễn Văn Tuấn -->
+                    <div class="author-card">
+                        <div class="author-avatar-wrap">
+                            <i class="fa-solid fa-user-gear"></i>
+                        </div>
+                        <h3 class="author-name">Nguyễn Văn Tuấn</h3>
+                        <span class="author-role-pill">Giao Diện Người Dùng &amp; Module AI</span>
+                        <p class="author-bio">
+                            Phụ trách xây dựng giao diện người dùng (UI/UX), hoàn thiện tương tác giỏ hàng nổi thông minh, chuẩn hóa dữ liệu thực đơn và phát triển các thuật toán gợi ý món ăn cá nhân hóa.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. QUY TRÌNH HOẠT ĐỘNG 4 BƯỚC -->
+            <section class="workflow-box">
+                <div class="section-header-wrap" style="margin-bottom: 16px;">
+                    <span class="section-tag">How It Works</span>
+                    <h2 class="section-main-title" style="font-size: 22px;">Quy Trình Kết Nối Đặt Món Liền Mạch</h2>
+                    <p class="section-desc">4 bước đơn giản để thưởng thức các món ăn hảo hạng từ các nhà hàng đối tác</p>
+                </div>
+
+                <div class="workflow-grid">
+                    <div class="workflow-step-card">
+                        <div class="step-number-badge">1</div>
+                        <div class="step-title">Duyệt &amp; Tìm Kiếm</div>
+                        <div class="step-desc">Khám phá nhà hàng theo khu vực, danh mục và xem đánh giá uy tín.</div>
+                    </div>
+                    <div class="workflow-step-card">
+                        <div class="step-number-badge">2</div>
+                        <div class="step-title">Chọn Món Vào Giỏ</div>
+                        <div class="step-desc">Xem thực đơn chi tiết, giá tiền rõ ràng và thêm món vào giỏ hàng.</div>
+                    </div>
+                    <div class="workflow-step-card">
+                        <div class="step-number-badge">3</div>
+                        <div class="step-title">Nhà Hàng Tiếp Nhận</div>
+                        <div class="step-desc">Nhà hàng nhận đơn tức thì, chuẩn bị và chế biến món ăn tươi ngon.</div>
+                    </div>
+                    <div class="workflow-step-card">
+                        <div class="step-number-badge">4</div>
+                        <div class="step-title">Giao &amp; Thưởng Thức</div>
+                        <div class="step-desc">Giao món ăn tận nơi, thanh toán an toàn và đánh giá trải nghiệm.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. CHI TIẾT CHỨC NĂNG CUNG CẤP THEO YÊU CẦU ĐỀ TÀI -->
+            <section style="margin-bottom: 40px;">
+                <div class="section-header-wrap">
+                    <span class="section-tag">Core Features</span>
+                    <h2 class="section-main-title">
+                        <i class="fa-solid fa-list-check" style="color: #c99834; margin-right: 8px;"></i> Các Chức Năng Cung Cấp Của Hệ Thống
+                    </h2>
+                    <p class="section-desc">Phục vụ tối ưu cho cả hai đối tượng Khách hàng và Đối tác Nhà hàng</p>
+                </div>
+
+                <div class="features-comparison-grid">
+
+                    <!-- CỘT 1: DÀNH CHO KHÁCH HÀNG (CUSTOMER) -->
+                    <div class="feature-column-card">
+                        <div class="feature-col-header">
+                            <div class="feature-col-icon icon-customer">
+                                <i class="fa-solid fa-user-tag"></i>
+                            </div>
+                            <div>
+                                <h3 class="feature-col-title">Dành Cho Khách Hàng</h3>
+                                <div class="feature-col-sub">Trải nghiệm ẩm thực tiện lợi, minh bạch</div>
+                            </div>
+                        </div>
+
+                        <!-- Yêu cầu 1 -->
+                        <div class="feature-row-item">
+                            <i class="fa-solid fa-magnifying-glass feature-row-icon icon-green"></i>
+                            <div>
+                                <div class="feature-row-title">Yêu cầu 1: Tìm kiếm và duyệt nhà hàng</div>
+                                <div class="feature-row-desc">
+                                    Tìm kiếm linh hoạt theo tên quán, địa chỉ, lọc nhanh theo quận (Quận 1, Quận 3, Thảo Điền...), hiển thị trạng thái mở cửa và điểm đánh giá sao trung thực.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Yêu cầu 2 -->
+                        <div class="feature-row-item">
+                            <i class="fa-solid fa-utensils feature-row-icon icon-green"></i>
+                            <div>
+                                <div class="feature-row-title">Yêu cầu 2: Xem thực đơn và thêm món vào giỏ</div>
+                                <div class="feature-row-desc">
+                                    Trải nghiệm thực đơn trực quan với hình ảnh món ăn, mô tả hương vị, đơn giá rõ ràng và đặt món tức thì vào giỏ hàng chỉ với 1 cú nhấp.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Yêu cầu 3 -->
+                        <div class="feature-row-item">
+                            <i class="fa-solid fa-cart-shopping feature-row-icon icon-green"></i>
+                            <div>
+                                <div class="feature-row-title">Yêu cầu 3: Quản lý giỏ hàng thông minh</div>
+                                <div class="feature-row-desc">
+                                    Phân chia món ăn theo từng nhà hàng riêng biệt, tùy chỉnh số lượng tăng/giảm, tự động tính tổng tiền và tích hợp nút giỏ hàng tròn nổi dạng chatbot theo dõi số lượng trực quan.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Yêu cầu 4 -->
+                        <div class="feature-row-item">
+                            <i class="fa-solid fa-credit-card feature-row-icon icon-green"></i>
+                            <div>
+                                <div class="feature-row-title">Yêu cầu 4: Đặt hàng và thanh toán an toàn</div>
+                                <div class="feature-row-desc">
+                                    Tiến hành đặt đơn hàng riêng biệt cho từng nhà hàng, hỗ trợ phương thức thanh toán tiền mặt (COD) hoặc thẻ trực tuyến nhanh chóng và bảo mật.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CỘT 2: DÀNH CHO NHÀ HÀNG & ĐỐI TÁC (RESTAURANT) -->
+                    <div class="feature-column-card">
+                        <div class="feature-col-header">
+                            <div class="feature-col-icon icon-restaurant">
+                                <i class="fa-solid fa-store"></i>
+                            </div>
+                            <div>
+                                <h3 class="feature-col-title">Dành Cho Nhà Hàng</h3>
+                                <div class="feature-col-sub">Công cụ vận hành và số hóa quản lý chuyên nghiệp</div>
+                            </div>
+                        </div>
+
+                        <!-- Yêu cầu 5 -->
+                        <div class="feature-row-item">
+                            <i class="fa-solid fa-bell-concierge feature-row-icon icon-gold"></i>
+                            <div>
+                                <div class="feature-row-title">Yêu cầu 5: Tiếp nhận và xác nhận đơn hàng</div>
+                                <div class="feature-row-desc">
+                                    Tiếp nhận đơn đặt món của khách hàng theo thời gian thực; kiểm soát tiến độ qua các trạng thái: Chờ duyệt (<code>PENDING</code>) &rarr; Xác nhận (<code>CONFIRMED</code>) &rarr; Chế biến (<code>PREPARING</code>) &rarr; Đang giao &rarr; Hoàn thành.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quản lý thực đơn -->
+                        <div class="feature-row-item">
+                            <i class="fa-solid fa-book-open feature-row-icon icon-gold"></i>
+                            <div>
+                                <div class="feature-row-title">Quản lý thực đơn &amp; phân loại món</div>
+                                <div class="feature-row-desc">
+                                    Thêm món mới, cập nhật giá bán, bổ sung hình ảnh đại diện, phân loại danh mục (Khai vị, Món chính, Đồ chay, Nước uống...) và bật/tắt tình trạng còn món dễ dàng.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mở rộng khách hàng -->
+                        <div class="feature-row-item">
+                            <i class="fa-solid fa-chart-line feature-row-icon icon-gold"></i>
+                            <div>
+                                <div class="feature-row-title">Tiếp cận khách hàng &amp; tối ưu chi phí</div>
+                                <div class="feature-row-desc">
+                                    Giúp các quán ăn tiếp cận cộng đồng thực khách rộng lớn trên toàn thành phố mà không phải chịu chi phí đầu tư xây dựng website và máy chủ riêng biệt.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ràng buộc phân quyền -->
+                        <div class="feature-row-item">
+                            <i class="fa-solid fa-shield-halved feature-row-icon icon-gold"></i>
+                            <div>
+                                <div class="feature-row-title">Phân quyền tài khoản chuẩn mực</div>
+                                <div class="feature-row-desc">
+                                    Hệ thống đảm bảo tính toàn vẹn và an toàn dữ liệu: người dùng đăng ký mới luôn được cấp vai trò mặc định là Khách hàng (<code>RoleEnum.CUSTOMER</code>).
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- 5. TÍNH NĂNG AI & GỢI Ý MÓN ĂN THÔNG MINH -->
+            <section class="ai-container-box">
+                <div style="text-align: center; margin-bottom: 14px;">
+                    <span style="background: rgba(255, 210, 105, 0.2); color: #ffd269; border: 1px solid #ffd269; font-size: 12px; font-weight: 800; padding: 4px 14px; border-radius: 999px; display: inline-block; margin-bottom: 8px;">
+                        <i class="fa-solid fa-brain"></i> TÍNH NĂNG MỞ RỘNG ĐỀ TÀI
+                    </span>
+                    <h2 style="font-family: 'Playfair Display', Georgia, serif; color: #ffffff; font-size: 24px; font-weight: 700; margin-bottom: 6px;">
+                        Trí Tuệ Nhân Tạo &amp; Phân Tích Thông Minh
+                    </h2>
+                    <p style="font-size: 14px; color: #e1ede4; max-width: 720px; margin: 0 auto;">
+                        Các giải pháp AI nâng cao được tích hợp để tối ưu hóa trải nghiệm đặt món cho từng khách hàng
+                    </p>
+                </div>
+
+                <div class="ai-grid">
+                    <!-- AI 1 -->
+                    <div class="ai-card">
+                        <div class="ai-card-icon">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+                        <h3 class="ai-card-title">Gợi Ý Món Ăn Cá Nhân Hóa</h3>
+                        <p class="ai-card-desc">
+                            Thuật toán phân tích lịch sử đặt món, thời gian trong ngày (bữa sáng, trưa, tối), vị trí khoảng cách và khẩu vị riêng (món cay, thanh đạm, đồ chay) để đưa ra gợi ý phù hợp nhất.
+                        </p>
+                    </div>
+
+                    <!-- AI 2 -->
+                    <div class="ai-card">
+                        <div class="ai-card-icon">
+                            <i class="fa-solid fa-burger"></i>
+                        </div>
+                        <h3 class="ai-card-title">Dự Đoán Món Đi Kèm (Combo)</h3>
+                        <p class="ai-card-desc">
+                            Hệ thống tự động nhận diện thói quen để đề xuất các món ăn kèm (side dishes), đồ uống hoặc nước sốt bổ trợ hoàn hảo, giúp bữa ăn tròn vị và tiện lợi cho khách hàng.
+                        </p>
+                    </div>
+
+                    <!-- AI 3 -->
+                    <div class="ai-card">
+                        <div class="ai-card-icon">
+                            <i class="fa-solid fa-comments-dollar"></i>
+                        </div>
+                        <h3 class="ai-card-title">Phân Tích Đánh Giá &amp; Cảm Xúc</h3>
+                        <p class="ai-card-desc">
+                            Ứng dụng xử lý ngôn ngữ tự nhiên (Sentiment Analysis) trên các bình luận, phản hồi của người dùng nhằm đo lường chính xác mức độ hài lòng và chất lượng món ăn theo thời gian thực.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. CALL TO ACTION -->
+            <section class="cta-bottom-card">
+                <h3 style="font-family: 'Playfair Display', Georgia, serif; color: #193824; font-size: 21px; font-weight: 800; margin-bottom: 8px;">
+                    Sẵn Sàng Trải Nghiệm Hệ Thống Ẩm Thực?
+                </h3>
+                <p style="font-size: 14px; color: #42392d; margin-bottom: 20px; max-width: 620px; margin-left: auto; margin-right: auto;">
+                    Khám phá ngay danh sách nhà hàng đối tác uy tín cùng hàng trăm món ngon hảo hạng được chế biến tươi ngon mỗi ngày.
+                </p>
+                <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+                    <a href="/#restaurants" class="cta-btn-primary">
+                        <i class="fa-solid fa-store"></i> Khám Phá Nhà Hàng
+                    </a>
+                    <a href="/cart" class="cta-btn-gold">
+                        <i class="fa-solid fa-basket-shopping"></i> Xem Giỏ Hàng
+                    </a>
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <p>© 2026 Food Shoppe • Deli • Market • Catering. Đề tài phát triển bởi <strong>Nguyễn Đinh Nhật Trường</strong> &amp; <strong>Nguyễn Văn Tuấn</strong>.</p>
+        <p style="margin-top: 4px; font-size: 12px; opacity: 0.85;">Dịch vụ ẩm thực thủ công tươi ngon &amp; nền tảng đặt món trung gian tin cậy mỗi ngày.</p>
+    </footer>
+</div>
+
+<!-- Floating Circular Cart Button (Chatbot Style) -->
+<a href="/cart" class="floating-cart-btn" id="floatingCartBtn" title="Xem giỏ hàng" aria-label="Xem giỏ hàng">
+    <i class="fa-solid fa-cart-shopping"></i>
+    <span class="floating-cart-badge cart-counter" id="floatingCartBadge">{{ cart_stats.total_quantity if cart_stats else 0 }}</span>
+    <span class="floating-cart-tooltip">Xem giỏ hàng (<span class="cart-counter">{{ cart_stats.total_quantity if cart_stats else 0 }}</span> món)</span>
+</a>
+
+<script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+</body>
+</html>

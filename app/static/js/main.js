@@ -274,12 +274,9 @@ async function fetchAndDisplayDishes(restaurantId, restaurantName, doScroll = tr
                         const resId = btn.getAttribute('data-res-id');
                         const dishId = btn.getAttribute('data-dish-id');
                         const name = btn.getAttribute('data-name');
-
                         const price = parseFloat(btn.getAttribute('data-price'));
 
                         addToCart(resId, dishId, name, price);
-
-                        showToast(`Đã thêm <b>${name}</b> vào giỏ hàng!`);
 
                         const originalHtml = btn.innerHTML;
                         btn.innerHTML = `<i class="fa-solid fa-check"></i> Đã thêm`;

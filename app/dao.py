@@ -1,16 +1,52 @@
-import hashlib
+import bcrypt
 from sqlalchemy import or_
-from werkzeug.security import check_password_hash
-from app.models import Restaurant, Dish, User
+from app import db
+from app.models import Restaurant, Dish, User, RoleEnum
+
+
+def hash_password(password: str) -> str:
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+
+
+def verify_password(password: str, hashed_password: str) -> bool:
+    try:
+        if hashed_password.startswith('$2a$') or hashed_password.startswith('$2b$') or hashed_password.startswith('$2y$'):
+            return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
+        from werkzeug.security import check_password_hash
+        return check_password_hash(hashed_password, password)
+    except Exception:
+        return False
 
 
 def auth_user(username, password):
     user = User.query.filter_by(username=username).first()
 
-    if user and check_password_hash(user.password_hash, password):
+    if user and verify_password(password, user.password_hash):
         return user
 
     return None
+
+def check_user_exists(username=None, email=None, phone=None):
+    if username and User.query.filter_by(username=username).first():
+        return "Tên đăng nhập đã tồn tại!"
+    if email and User.query.filter_by(email=email).first():
+        return "Email này đã được sử dụng!"
+    if phone and User.query.filter_by(phone=phone).first():
+        return "Số điện thoại này đã được sử dụng!"
+    return None
+
+def add_user(username, password, email, phone=None, role=RoleEnum.CUSTOMER):
+    user = User(
+        username=username.strip(),
+        password_hash=hash_password(password),
+        email=email.strip(),
+        phone=phone.strip() if phone else None,
+        role=role
+    )
+    db.session.add(user)
+    db.session.commit()
+    return user
 
 def get_user_by_id(id):
     return User.query.get(id)

@@ -15,25 +15,26 @@
 <div class="site-wrapper">
     <nav class="main-nav" id="topNav">
         <div class="nav-container">
-            <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
-            <a href="/#restaurants" class="nav-link"><i class="fa-solid fa-store"></i> Restaurant</a>
-            <a href="/#about" class="nav-link"><i class="fa-solid fa-circle-info"></i> About Us</a>
-            <a href="/cart" class="nav-link active">
-                <i class="fa-solid fa-cart-shopping"></i> Giỏ hàng
-                <span class="cart-counter" style="background:#cda434; color:#fff; padding:2px 7px; border-radius:10px; font-size:12px;">
-                    {{ cart_stats.total_quantity if cart_stats else 0 }}
-                </span>
-            </a>
-            {% if current_user and current_user.is_authenticated %}
-                <span class="nav-link" style="color: var(--accent-gold, #cda434); font-weight: 600;">
-                    <i class="fa-solid fa-user-circle"></i> {{ current_user.username }}
-                </span>
-                <a href="/logout" class="nav-link" style="color: #c93b2b; margin-left: 10px;">
+            <div class="nav-links-left">
+                <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="/#restaurants" class="nav-link"><i class="fa-solid fa-store"></i> Restaurant</a>
+                <a href="/about" class="nav-link"><i class="fa-solid fa-circle-info"></i> About Us</a>
+            </div>
+            <div class="nav-auth-right">
+                {% if current_user and current_user.is_authenticated %}
+                <div class="nav-user-greeting">
+                    <i class="fa-solid fa-circle-user"></i>
+                    <span>Chào, <strong>{{ current_user.username }}</strong></span>
+                </div>
+                <a href="/logout" class="nav-logout-btn">
                     <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
                 </a>
-            {% else %}
-                <a href="/login?next=/cart" class="nav-link"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</a>
-            {% endif %}
+                {% else %}
+                <a href="/login?next=/cart" class="nav-login-btn">
+                    <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập
+                </a>
+                {% endif %}
+            </div>
         </div>
     </nav>
 
@@ -46,8 +47,8 @@
         </div>
     </header>
 
-    <main class="main-container" style="max-width: 900px; margin: 30px auto; padding: 0 15px;">
-        <h2 style="font-family:'Cinzel', serif; color:var(--primary-green-dark, #2c4c3b); margin-bottom: 20px; text-align:center;">
+    <main class="main-container single-column" style="max-width: 900px; margin: 30px auto; padding: 0 15px;">
+        <h2 style="font-family:'Playfair Display', Georgia, serif; color:var(--primary-green-dark, #2c4c3b); margin-bottom: 20px; text-align:center; font-weight:700;">
             <i class="fa-solid fa-basket-shopping" style="color:#cda434;"></i> GIỎ HÀNG CỦA BẠN
         </h2>
 
