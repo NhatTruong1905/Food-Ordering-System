@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Shoppe | Đăng Ký</title>
+    <meta name="description" content="Đăng ký tài khoản Food Shoppe để trải nghiệm dịch vụ ẩm thực thủ công và đặt hàng dễ dàng.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Playfair+Display:ital,wght@0,500;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="site-wrapper">
+    <!-- Header Logo -->
+    <header class="site-header">
+        <div class="brand-banner">
+            <a href="/">
+                <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="FOOD SHOPPE - DELI • MARKET • CATERING" class="brand-svg">
+            </a>
+        </div>
+    </header>
+
+    <main class="main-container single-column" style="max-width: 480px; margin: 40px auto; padding: 0 20px;">
+
+        <div style="background: #faf6ea; border: 2px solid #ecd8ba; border-radius: 12px; padding: 32px 28px; box-shadow: 0 8px 24px rgba(0,0,0,0.06);">
+
+            <div style="text-align: center; margin-bottom: 24px;">
+                <h2 style="serif; color: var(--primary-green-dark, #2c4c3b); font-size: 26px; margin-bottom: 6px;">Đăng ký</h2>
+                <p style="color: var(--text-muted, #737373); font-style: italic; font-size: 13.5px;">
+                    Tạo tài khoản mới để trải nghiệm ẩm thực cùng Food Shoppe
+                </p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div style="padding: 10px 14px; background: {% if category == 'success' %}#d4edda; color: #155724; border: 1px solid #c3e6cb;{% else %}#f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% endif %} border-radius: 6px; margin-bottom: 18px; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid {% if category == 'success' %}fa-circle-check{% else %}fa-circle-exclamation{% endif %}"></i>
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form action="/register" method="POST">
+
+                <div class="form-group" style="margin-bottom: 18px;">
+                    <label class="form-label" for="username" style="font-weight: 600; color: var(--text-dark, #333); margin-bottom: 6px; display: block; font-size: 13.5px;">
+                        Tên đăng nhập: <span style="color: #c92a2a;">*</span>
+                    </label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-user" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #999;"></i>
+                        <input type="text" id="username" name="username" class="form-control" placeholder="Nhập tên đăng nhập" required value="{{ username or '' }}"
+                               style="padding-left: 40px; width: 100%; height: 44px; border: 1px solid #ebd9bf; border-radius: 6px; outline: none; background: #fff; font-family: inherit;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 18px;">
+                    <label class="form-label" for="email" style="font-weight: 600; color: var(--text-dark, #333); margin-bottom: 6px; display: block; font-size: 13.5px;">
+                        Địa chỉ Gmail: <span style="color: #c92a2a;">*</span>
+                    </label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-envelope" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #999;"></i>
+                        <input type="email" id="email" name="email" class="form-control" placeholder="Nhập địa chỉ Gmail (ví dụ: example@gmail.com)" required value="{{ email or '' }}"
+                               pattern="^[a-zA-Z0-9_.+-]+@gmail\.com$"
+                               title="Vui lòng nhập đúng định dạng Gmail (ví dụ: example@gmail.com)"
+                               style="padding-left: 40px; width: 100%; height: 44px; border: 1px solid #ebd9bf; border-radius: 6px; outline: none; background: #fff; font-family: inherit;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 18px;">
+                    <label class="form-label" for="phone" style="font-weight: 600; color: var(--text-dark, #333); margin-bottom: 6px; display: block; font-size: 13.5px;">
+                        Số điện thoại: <span style="color: #c92a2a;">*</span>
+                    </label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-phone" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #999;"></i>
+                        <input type="tel" id="phone" name="phone" class="form-control" placeholder="Nhập số điện thoại (bắt buộc, 9-11 số)" required value="{{ phone or '' }}"
+                               pattern="[0-9]{9,11}"
+                               maxlength="11"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                               title="Số điện thoại là bắt buộc và chỉ bao gồm các chữ số (từ 9 đến 11 số)"
+                               style="padding-left: 40px; width: 100%; height: 44px; border: 1px solid #ebd9bf; border-radius: 6px; outline: none; background: #fff; font-family: inherit;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 18px;">
+                    <label class="form-label" for="password" style="font-weight: 600; color: var(--text-dark, #333); margin-bottom: 6px; display: block; font-size: 13.5px;">
+                        Mật khẩu: <span style="color: #c92a2a;">*</span>
+                    </label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-lock" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #999;"></i>
+                        <input type="password" id="password" name="password" class="form-control" placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)" required minlength="6"
+                               style="padding-left: 40px; width: 100%; height: 44px; border: 1px solid #ebd9bf; border-radius: 6px; outline: none; background: #fff; font-family: inherit;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 24px;">
+                    <label class="form-label" for="confirm_password" style="font-weight: 600; color: var(--text-dark, #333); margin-bottom: 6px; display: block; font-size: 13.5px;">
+                        Xác nhận mật khẩu: <span style="color: #c92a2a;">*</span>
+                    </label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-shield-halved" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #999;"></i>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Nhập lại mật khẩu" required minlength="6"
+                               style="padding-left: 40px; width: 100%; height: 44px; border: 1px solid #ebd9bf; border-radius: 6px; outline: none; background: #fff; font-family: inherit;">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit-form"
+                        style="width: 100%; background: var(--primary-green, #3a6351); color: #fff; border: none; padding: 12px; font-family: 'Cinzel', serif; font-size: 15px; font-weight: 700; border-radius: 6px; cursor: pointer; transition: background 0.3s;"
+                        onmouseover="this.style.backgroundColor='var(--primary-green-dark, #2c4c3b)'"
+                        onmouseout="this.style.backgroundColor='var(--primary-green, #3a6351)'">
+                    <i class="fa-solid fa-user-plus" style="margin-right: 6px;"></i> ĐĂNG KÝ
+                </button>
+
+            </form>
+
+            <div style="text-align: center; margin-top: 22px; padding-top: 18px; border-top: 1px dashed #ebd9bf; font-size: 13.5px; color: #555;">
+                Đã có tài khoản?
+                <a href="/login" style="color: var(--primary-green-dark, #2c4c3b); font-weight: 700; text-decoration: none; margin-left: 4px;">
+                    Đăng nhập ngay
+                </a>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <p>© 2026 Food Shoppe • Deli • Market • Catering. All rights reserved.</p>
+        <p style="margin-top: 4px; font-size: 12px; opacity: 0.85;">Dịch vụ ẩm thực thủ công tươi ngon &amp; nguyên liệu hảo hạng mỗi ngày.</p>
+    </footer>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

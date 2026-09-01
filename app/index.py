@@ -1,13 +1,24 @@
-from flask import render_template, request, jsonify, session, redirect
+from flask import render_template, request, jsonify, session, redirect, flash
 from app import app, dao, login
 from flask_login import login_user, logout_user, current_user
 
 from app.utils import get_cart_stats, get_res_total
 
 
+@app.context_processor
+def inject_cart_stats():
+    cart = session.get('cart', {})
+    return {
+        'cart_stats': get_cart_stats(cart)
+    }
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/about')
+def about_view():
+    return render_template('about.html')
 
 @app.route('/logout')
 def logout_process():
@@ -16,19 +27,71 @@ def logout_process():
 
 @app.route('/login')
 def login_view():
+    if current_user.is_authenticated:
+        return redirect('/')
     return render_template('login.html')
 
 @app.route('/login', methods=['post'])
 def login_process():
-    username = request.form.get('username')
-    password = request.form.get('password')
+    username = request.form.get('username').strip()
+    password = request.form.get('password').strip()
 
     user = dao.auth_user(username=username, password=password)
     if user:
         login_user(user=user)
+        next_url = request.args.get('next')
+        return redirect(next_url if next_url else '/')
+    
+    flash('Tên đăng nhập hoặc mật khẩu không chính xác!', 'danger')
+    return redirect('/login')
 
-    next = request.args.get('next')
-    return redirect(next if next else '/')
+@app.route('/register')
+def register_view():
+    if current_user.is_authenticated:
+        return redirect('/')
+    return render_template('register.html')
+
+@app.route('/register', methods=['POST'])
+def register_process():
+    import re
+    username = request.form.get('username', '').strip()
+    email = request.form.get('email', '').strip().lower()
+    phone = request.form.get('phone', '').strip()
+    password = request.form.get('password', '')
+    confirm_password = request.form.get('confirm_password', '')
+
+    if not username or not email or not phone or not password:
+        flash('Vui lòng điền đầy đủ các trường thông tin bắt buộc!', 'danger')
+        return render_template('register.html', username=username, email=email, phone=phone)
+
+    if not re.match(r'^[a-zA-Z0-9_.+-]+@gmail\.com$', email):
+        flash('Email phải có định dạng Gmail hợp lệ (ví dụ: example@gmail.com)!', 'danger')
+        return render_template('register.html', username=username, email=email, phone=phone)
+
+    if not re.match(r'^\d{9,11}$', phone):
+        flash('Số điện thoại không hợp lệ (bắt buộc nhập từ 9 đến 11 chữ số, không chứa chữ cái)!', 'danger')
+        return render_template('register.html', username=username, email=email, phone=phone)
+
+    if password != confirm_password:
+        flash('Mật khẩu xác nhận không trùng khớp!', 'danger')
+        return render_template('register.html', username=username, email=email, phone=phone)
+
+    if len(password) < 6:
+        flash('Mật khẩu phải có độ dài từ 6 ký tự trở lên!', 'danger')
+        return render_template('register.html', username=username, email=email, phone=phone)
+
+    err_msg = dao.check_user_exists(username=username, email=email, phone=phone if phone else None)
+    if err_msg:
+        flash(err_msg, 'danger')
+        return render_template('register.html', username=username, email=email, phone=phone)
+
+    try:
+        dao.add_user(username=username, password=password, email=email, phone=phone if phone else None)
+        flash('Đăng ký tài khoản thành công! Vui lòng đăng nhập.', 'success')
+        return redirect('/login')
+    except Exception as e:
+        flash(f'Đã có lỗi xảy ra trong quá trình đăng ký: {str(e)}', 'danger')
+        return render_template('register.html', username=username, email=email, phone=phone)
 
 @login.user_loader
 def load_user(id):
@@ -237,12 +300,6 @@ def checkout_restaurant(restaurant_id):
 
         if restaurant_id not in cart or not cart[restaurant_id].get('items'):
             return jsonify({"error": "Nhà hàng này không có món nào trong giỏ!"}), 400
-
-        # Lấy dữ liệu món ăn của riêng nhà hàng này
-        # res_cart_data = cart[restaurant_id]
-
-        # Lưu đơn hàng
-        # ví dụ: save_order_to_db(user_id=current_user.id, restaurant_id=restaurant_id, items=res_cart_data['items'])
 
         del cart[restaurant_id]
         session['cart'] = cart

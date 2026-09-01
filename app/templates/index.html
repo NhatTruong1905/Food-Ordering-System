@@ -20,17 +20,26 @@
 <div class="site-wrapper">
     <nav class="main-nav" id="topNav">
         <div class="nav-container">
-            <a href="#home" class="nav-link active"><i class="fa-solid fa-house"></i> Home</a>
-            <a href="#restaurants" class="nav-link"><i class="fa-solid fa-store"></i> Restaurant</a>
-            <a href="#about" class="nav-link"><i class="fa-solid fa-circle-info"></i> About Us</a>
-            <a href="#gallery" class="nav-link"><i class="fa-solid fa-vr-cardboard"></i> Virtual Tour</a>
-            <a href="#testimonials" class="nav-link"><i class="fa-solid fa-comments"></i> Testimonials</a>
-            <a href="/cart" class="nav-link"><i class="fa-solid fa-cart-shopping"></i> Giỏ hàng</a>
-            {% if current_user.is_authenticated %}
-            <a href="/logout" class="nav-link active">Đăng xuất</a>
-            {% else %}
-            <a href="/login" class="nav-link active"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</a>
-            {% endif %}
+            <div class="nav-links-left">
+                <a href="/" class="nav-link active"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="/#restaurants" class="nav-link"><i class="fa-solid fa-store"></i> Restaurant</a>
+                <a href="/about" class="nav-link"><i class="fa-solid fa-circle-info"></i> About Us</a>
+            </div>
+            <div class="nav-auth-right">
+                {% if current_user and current_user.is_authenticated %}
+                <div class="nav-user-greeting">
+                    <i class="fa-solid fa-circle-user"></i>
+                    <span>Chào, <strong>{{ current_user.username }}</strong></span>
+                </div>
+                <a href="/logout" class="nav-logout-btn">
+                    <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                </a>
+                {% else %}
+                <a href="/login" class="nav-login-btn">
+                    <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập
+                </a>
+                {% endif %}
+            </div>
         </div>
     </nav>
 
@@ -57,31 +66,13 @@
                        aria-label="Facebook">
                         <i class="fa-brands fa-facebook-f"></i>
                     </a>
-                    <a href="https://twitter.com" target="_blank" class="social-icon-btn tw" title="Twitter / X"
-                       aria-label="Twitter">
-                        <i class="fa-brands fa-x-twitter"></i>
-                    </a>
                     <a href="https://instagram.com" target="_blank" class="social-icon-btn ig" title="Instagram"
                        aria-label="Instagram">
                         <i class="fa-brands fa-instagram"></i>
                     </a>
-                    <a href="https://yelp.com" target="_blank" class="social-icon-btn yelp" title="Yelp"
-                       aria-label="Yelp">
-                        <i class="fa-brands fa-yelp"></i>
-                    </a>
                 </div>
             </div>
-
-            <div style="background: #eef5eb; border: 1px solid #c9dec3; border-radius: 6px; padding: 14px; text-align: center;">
-                <h4 style="font-family:'Playfair Display', serif; color:var(--primary-green-dark); margin-bottom:4px; font-size:15px;">
-                    Dịch vụ Catering Tiệc</h4>
-                <p style="font-size:12px; color:#4a5d45; margin-bottom:8px;">Nhận đặt tiệc công ty, sinh nhật &amp; sự
-                    kiện gia đình.</p>
-                <button type="button" class="btn-order-quick" style="width:100%;"
-                        data-order-item="Gói Tiệc Catering Sự Kiện" data-order-price="Liên hệ">
-                    <i class="fa-solid fa-utensils"></i> Tư vấn Catering
-                </button>
-            </div>
+            
         </aside>
 
         <section class="main-panel">
@@ -131,27 +122,6 @@
                 </div>
 
                 <div class="pagination-wrapper" id="restaurantPagination"></div>
-            </div>
-
-            <div class="virtual-tour-section" id="gallery">
-                <h1 class="section-heading-green">Check out a Virtual Tour of our Shoppe</h1>
-
-                <div class="tour-hero-card" data-open-tour title="Bấm để khám phá không gian ảo bên trong 360°">
-                    <img src="{{ url_for('static', filename='images/interior_tour.jpg') }}"
-                         alt="Virtual Tour of Food Shoppe" class="tour-hero-img">
-
-                    <div class="tour-overlay">
-              <span class="tour-overlay-badge">
-                <i class="fa-solid fa-vr-cardboard"></i> 360° Interactive Tour
-              </span>
-                        <h2 class="tour-overlay-title">Khám Phá Không Gian Chợ Đặc Sản &amp; Quầy Deli</h2>
-                        <p class="tour-overlay-sub">Trải nghiệm các kệ hàng gia vị hữu cơ, phô mai thủ công hảo hạng và
-                            không gian thưởng thức ẩm thực ấm cúng.</p>
-                        <button type="button" class="btn-open-tour">
-                            <i class="fa-solid fa-play"></i> Bắt đầu Tour Tham Quan Ngay
-                        </button>
-                    </div>
-                </div>
             </div>
 
             <div class="specials-section" id="restaurantDishes">
@@ -224,25 +194,6 @@
                             <div class="author">— Trần Thị Bình</div>
                         </div>
                     {% endif %}
-                </div>
-            </div>
-
-            <div class="specials-section" id="location" style="background:#fdfcf9;">
-                <h2 class="section-subtitle-serif" style="font-size: 20px; margin-bottom: 12px;">
-                    <i class="fa-solid fa-map-location-dot" style="color: var(--primary-green); margin-right: 6px;"></i>
-                    Vị Trí &amp; Đường Đi Đến Food Shoppe
-                </h2>
-                <div style="background: #eadecb; border-radius: 8px; height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; border: 1px solid #d0bea0;">
-                    <i class="fa-solid fa-store"
-                       style="font-size: 32px; color: var(--primary-green); margin-bottom: 10px;"></i>
-                    <h4 style="font-family:'Playfair Display', serif; font-size:18px; color:var(--text-dark);">124
-                        Gourmet Boulevard, Deli District</h4>
-                    <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Có bãi đỗ xe miễn phí cho
-                        khách hàng &amp; không gian bàn ngoài trời.</p>
-                    <a href="https://maps.google.com" target="_blank"
-                       style="margin-top: 10px; display: inline-block; background: var(--primary-green); color: #fff; text-decoration: none; padding: 6px 16px; border-radius: 4px; font-size: 13px; font-weight: 600;">
-                        <i class="fa-solid fa-directions"></i> Mở Google Maps
-                    </a>
                 </div>
             </div>
 
@@ -321,7 +272,9 @@
 
             <div class="form-group">
                 <label class="form-label" for="custPhone">Số điện thoại liên hệ:</label>
-                <input type="tel" id="custPhone" class="form-control" placeholder="Ví dụ: 0912 345 678" required>
+                <input type="tel" id="custPhone" class="form-control" placeholder="Ví dụ: 0912345678" required
+                       pattern="[0-9]{9,11}" maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                       title="Vui lòng chỉ nhập các chữ số (từ 9 đến 11 số)">
             </div>
 
             <div class="form-group">
@@ -438,6 +391,12 @@
 
     </div>
 </div>
+
+<a href="/cart" class="floating-cart-btn" id="floatingCartBtn" title="Xem giỏ hàng" aria-label="Xem giỏ hàng">
+    <i class="fa-solid fa-cart-shopping"></i>
+    <span class="floating-cart-badge cart-counter" id="floatingCartBadge">{{ cart_stats.total_quantity if cart_stats else 0 }}</span>
+    <span class="floating-cart-tooltip">Xem giỏ hàng (<span class="cart-counter">{{ cart_stats.total_quantity if cart_stats else 0 }}</span> món)</span>
+</a>
 
 <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>

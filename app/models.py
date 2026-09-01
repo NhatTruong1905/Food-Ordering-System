@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from flask_login import UserMixin
-from werkzeug.security import generate_password_hash
+import bcrypt
 from app import db
 
 
@@ -179,7 +179,7 @@ def seed_data():
     User.query.delete()
     db.session.commit()
 
-    default_password = generate_password_hash("123456")
+    default_password = bcrypt.hashpw(b"123456", bcrypt.gensalt()).decode('utf-8')
 
     admin_user = User(
         username="admin",
