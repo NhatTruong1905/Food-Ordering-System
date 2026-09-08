@@ -1,4 +1,3 @@
-
 function addToCart(restaurantId, dishId, name, price) {
     fetch('/api/carts', {
         method: 'POST',
@@ -25,17 +24,15 @@ function addToCart(restaurantId, dishId, name, price) {
             ? data.stats.total_quantity
             : 0;
 
-        // Cập nhật tất cả các badge số lượng trên giao diện
         let counters = document.querySelectorAll('.cart-counter');
         counters.forEach(c => {
             c.innerText = totalQty;
         });
 
-        // Hiệu ứng nảy (bounce & pop) cho nút giỏ hàng tròn dạng chatbot
         const floatingCart = document.getElementById('floatingCartBtn');
         if (floatingCart) {
             floatingCart.classList.remove('cart-bump');
-            void floatingCart.offsetWidth; // Trigger reflow để chạy lại animation
+            void floatingCart.offsetWidth; 
             floatingCart.classList.add('cart-bump');
         }
 
@@ -47,7 +44,6 @@ function addToCart(restaurantId, dishId, name, price) {
         console.error('Lỗi khi thêm vào giỏ hàng:', err);
     });
 }
-
 
 function updateCart(restaurantId, dishId, inputObj) {
     let quantity = parseInt(inputObj.value);
@@ -66,14 +62,11 @@ function updateCart(restaurantId, dishId, inputObj) {
     .then(data => {
         if (data.error) return alert("Lỗi: " + data.error);
 
-
         let subtotalEl = document.getElementById(`subtotal-${restaurantId}-${dishId}`);
         if (subtotalEl) subtotalEl.innerText = data.item_subtotal.toLocaleString('vi-VN');
 
-
         let resAmountEl = document.getElementById(`res-amount-${restaurantId}`);
         if (resAmountEl) resAmountEl.innerText = data.res_total_amount.toLocaleString('vi-VN');
-
 
         document.querySelector('.cart-amount').innerText = data.grand_total_amount.toLocaleString('vi-VN');
         document.querySelectorAll('.cart-counter').forEach(c => c.innerText = data.grand_total_quantity);
@@ -97,7 +90,6 @@ function deleteCart(restaurantId, dishId) {
             let resCard = document.getElementById(`cart-res-${restaurantId}`);
             if (resCard) resCard.remove();
         } else {
-
             let resAmountEl = document.getElementById(`res-amount-${restaurantId}`);
             if (resAmountEl) resAmountEl.innerText = data.res_total_amount.toLocaleString('vi-VN');
         }
@@ -112,13 +104,32 @@ function deleteCart(restaurantId, dishId) {
 }
 
 function payRestaurant(restaurantId) {
-    if (!confirm(`Bạn muốn tiến hành đặt đơn hàng riêng cho Nhà hàng #${restaurantId}?`)) return;
+    const address = prompt("Vui lòng nhập địa chỉ giao hàng của bạn (Số nhà, Đường, Quận...):", "");
+    if (address === null) return; // Bấm Cancel
+    
+    if (address.trim() === "") {
+        alert("Bạn phải nhập địa chỉ giao hàng để tiếp tục!");
+        return;
+    }
+
+    if (!confirm(`Xác nhận đặt đơn hàng cho Nhà hàng #${restaurantId} (Thanh toán tiền mặt - COD)?`)) return;
 
     fetch(`/api/checkout/${restaurantId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            delivery_address: address,
+            payment_method: 'CASH'
+        })
     })
-    .then(res => res.json())
+    .then(res => {
+        if (res.status === 401) {
+            alert("Vui lòng đăng nhập để đặt hàng!");
+            window.location.href = '/login?next=/cart';
+            throw new Error('Unauthorized');
+        }
+        return res.json();
+    })
     .then(data => {
         if (data.error) return alert("Lỗi: " + data.error);
 
@@ -132,6 +143,12 @@ function payRestaurant(restaurantId) {
         } else {
             document.querySelector('.cart-amount').innerText = data.grand_total_amount.toLocaleString('vi-VN');
             document.querySelectorAll('.cart-counter').forEach(c => c.innerText = data.grand_total_quantity);
+        }
+    })
+    .catch(err => {
+        if(err.message !== 'Unauthorized') {
+            console.error('Lỗi thanh toán:', err);
+            alert("Đã xảy ra lỗi hệ thống khi đặt hàng.");
         }
     });
 }

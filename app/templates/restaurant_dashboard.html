@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Đơn Hàng | {{ restaurant.name }}</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="site-wrapper">
+    <!-- Navbar -->
+    <nav class="main-nav" id="topNav">
+        <div class="nav-container">
+            <div class="nav-links-left">
+                <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Trang chủ</a>
+            </div>
+            <div class="nav-auth-right">
+                <div class="nav-user-greeting" style="background: rgba(255,210,105,0.2); border-color:#c99834;">
+                    <i class="fa-solid fa-store" style="color: #ffd269;"></i>
+                    <span>Cửa hàng: <strong>{{ current_user.username }}</strong></span>
+                </div>
+                <a href="/logout" class="nav-logout-btn">
+                    <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Logo -->
+    <header class="site-header">
+        <div class="brand-banner">
+            <a href="/">
+                <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="FOOD SHOPPE - DELI • MARKET • CATERING" class="brand-svg">
+            </a>
+        </div>
+    </header>
+
+    <main class="main-container single-column" style="max-width: 1000px; margin: 30px auto; padding: 0 15px;">
+        <div style="background: #ffffff; border: 2px solid #ecd8ba; border-radius: 12px; padding: 30px; box-shadow: 0 8px 24px rgba(0,0,0,0.06);">
+            
+            <h2 style="font-family:'Playfair Display', serif; color: var(--primary-green-dark); margin-bottom: 8px; font-size: 24px;">
+                <i class="fa-solid fa-bell-concierge" style="color:#cda434;"></i> Bảng Điều Khiển Nhà Hàng: {{ restaurant.name }}
+            </h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 25px;">Chấp nhận và cập nhật trạng thái đơn hàng của thực khách tại đây.</p>
+
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14.5px;">
+                <thead>
+                    <tr style="background: #faf6ea; border-bottom: 2px solid #ecd8ba;">
+                        <th style="padding: 14px 12px; color: var(--primary-green-dark);">Mã Đơn</th>
+                        <th style="padding: 14px 12px; color: var(--primary-green-dark);">Thời gian</th>
+                        <th style="padding: 14px 12px; color: var(--primary-green-dark);">Địa chỉ giao</th>
+                        <th style="padding: 14px 12px; color: var(--primary-green-dark);">Tổng tiền</th>
+                        <th style="padding: 14px 12px; color: var(--primary-green-dark);">Cập nhật Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for o in orders %}
+                    <tr style="border-bottom: 1px solid #eee; transition: background 0.2s;" onmouseover="this.style.background='#fdfbf7'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 14px 12px; font-weight: bold;">#{{ o.id }}</td>
+                        <td style="padding: 14px 12px; color: #555;">{{ o.created_at.strftime('%H:%M | %d/%m/%Y') }}</td>
+                        <td style="padding: 14px 12px;">{{ o.delivery_address }}</td>
+                        <td style="padding: 14px 12px; color: #d89f28; font-weight: 800;">
+                            {{ "{:,.0f}".format(o.total_amount) }} ₫
+                        </td>
+                        <td style="padding: 14px 12px;">
+                            <select onchange="updateStatus({{ o.id }}, this.value)" style="padding: 8px 12px; border: 1px solid #d4c5a9; border-radius: 6px; background: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; outline: none;">
+                                <option value="PENDING" {% if o.status.name == 'PENDING' %}selected{% endif %}>🕒 Chờ xác nhận</option>
+                                <option value="CONFIRMED" {% if o.status.name == 'CONFIRMED' %}selected{% endif %}>✔️ Đã xác nhận</option>
+                                <option value="PREPARING" {% if o.status.name == 'PREPARING' %}selected{% endif %}>🍳 Đang chuẩn bị</option>
+                                <option value="DELIVERING" {% if o.status.name == 'DELIVERING' %}selected{% endif %}>🛵 Đang giao hàng</option>
+                                <option value="COMPLETED" {% if o.status.name == 'COMPLETED' %}selected{% endif %}>✅ Hoàn thành</option>
+                                <option value="CANCELLED" {% if o.status.name == 'CANCELLED' %}selected{% endif %}>❌ Đã Hủy</option>
+                            </select>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="padding: 30px; text-align: center; color: #777;">
+                            <i class="fa-solid fa-inbox" style="font-size: 30px; color: #d4c5a9; margin-bottom: 10px; display:block;"></i>
+                            Chưa có đơn hàng nào.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <p>© 2026 Food Shoppe • Bảng Điều Khiển Đối Tác Nhà Hàng</p>
+    </footer>
+</div>
+
+<script>
+function updateStatus(orderId, newStatus) {
+    fetch(`/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.error) {
+            alert("Lỗi: " + data.error);
+        } else {
+            // Thay vì dùng Toast, tạm dùng Alert để chủ nhà hàng chắc chắn nhận được thông báo
+            alert("Thành công: " + data.message);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Có lỗi xảy ra trong lúc kết nối máy chủ.");
+    });
+}
+</script>
+</body>
+</html>
