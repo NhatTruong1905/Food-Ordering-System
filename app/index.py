@@ -2,8 +2,10 @@ from flask import render_template, request, jsonify, session, redirect, flash
 from app import app, dao, login, db
 from flask_login import login_user, logout_user, current_user, login_required
 from app.utils import get_cart_stats, get_res_total
-from app.models import Order, OrderItem, Payment, OrderStatusEnum, PaymentMethodEnum, PaymentStatusEnum, RoleEnum, Restaurant
+from app.models import Order, OrderItem, Payment, OrderStatusEnum, PaymentMethodEnum, PaymentStatusEnum, RoleEnum, \
+    Restaurant
 from decimal import Decimal
+
 
 @app.context_processor
 def inject_cart_stats():
@@ -12,24 +14,29 @@ def inject_cart_stats():
         'cart_stats': get_cart_stats(cart)
     }
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
+
 @app.route('/about')
 def about_view():
     return render_template('about.html')
+
 
 @app.route('/logout')
 def logout_process():
     logout_user()
     return redirect('/login')
 
+
 @app.route('/login')
 def login_view():
     if current_user.is_authenticated:
         return redirect('/')
     return render_template('login.html')
+
 
 @app.route('/login', methods=['post'])
 def login_process():
@@ -41,9 +48,10 @@ def login_process():
         login_user(user=user)
         next_url = request.args.get('next')
         return redirect(next_url if next_url else '/')
-    
+
     flash('Tên đăng nhập hoặc mật khẩu không chính xác!', 'danger')
     return redirect('/login')
+
 
 @app.route('/register')
 def register_view():
@@ -51,51 +59,165 @@ def register_view():
         return redirect('/')
     return render_template('register.html')
 
+
 @app.route('/register', methods=['POST'])
 def register_process():
     import re
     username = request.form.get('username', '').strip()
     email = request.form.get('email', '').strip().lower()
     phone = request.form.get('phone', '').strip()
+    address = request.form.get('address', '').strip()
     password = request.form.get('password', '')
     confirm_password = request.form.get('confirm_password', '')
 
     if not username or not email or not phone or not password:
         flash('Vui lòng điền đầy đủ các trường thông tin bắt buộc!', 'danger')
-        return render_template('register.html', username=username, email=email, phone=phone)
+        return render_template('register.html', username=username, email=email, phone=phone, address=address)
 
     if not re.match(r'^[a-zA-Z0-9_.+-]+@gmail\.com$', email):
         flash('Email phải có định dạng Gmail hợp lệ (ví dụ: example@gmail.com)!', 'danger')
-        return render_template('register.html', username=username, email=email, phone=phone)
+        return render_template('register.html', username=username, email=email, phone=phone, address=address)
 
     if not re.match(r'^\d{9,11}$', phone):
         flash('Số điện thoại không hợp lệ (bắt buộc nhập từ 9 đến 11 chữ số, không chứa chữ cái)!', 'danger')
-        return render_template('register.html', username=username, email=email, phone=phone)
+        return render_template('register.html', username=username, email=email, phone=phone, address=address)
 
     if password != confirm_password:
         flash('Mật khẩu xác nhận không trùng khớp!', 'danger')
-        return render_template('register.html', username=username, email=email, phone=phone)
+        return render_template('register.html', username=username, email=email, phone=phone, address=address)
 
     if len(password) < 6:
         flash('Mật khẩu phải có độ dài từ 6 ký tự trở lên!', 'danger')
-        return render_template('register.html', username=username, email=email, phone=phone)
+        return render_template('register.html', username=username, email=email, phone=phone, address=address)
 
     err_msg = dao.check_user_exists(username=username, email=email, phone=phone if phone else None)
     if err_msg:
         flash(err_msg, 'danger')
-        return render_template('register.html', username=username, email=email, phone=phone)
+        return render_template('register.html', username=username, email=email, phone=phone, address=address)
 
     try:
-        dao.add_user(username=username, password=password, email=email, phone=phone if phone else None)
+        dao.add_user(
+            username=username,
+            password=password,
+            email=email,
+            phone=phone if phone else None,
+            address=address if address else None
+        )
         flash('Đăng ký tài khoản thành công! Vui lòng đăng nhập.', 'success')
         return redirect('/login')
     except Exception as e:
         flash(f'Đã có lỗi xảy ra trong quá trình đăng ký: {str(e)}', 'danger')
-        return render_template('register.html', username=username, email=email, phone=phone)
+        return render_template('register.html', username=username, email=email, phone=phone, address=address)
+
 
 @login.user_loader
 def load_user(id):
     return dao.get_user_by_id(id)
+
+
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile_view():
+    import re
+    active_tab = 'tab-info'
+    if request.method == 'POST':
+        if request.form.get('action') == 'change_password' or request.form.get('current_password') or request.form.get('new_password'):
+            active_tab = 'tab-password'
+
+        email = request.form.get('email', '').strip().lower()
+        phone = request.form.get('phone', '').strip()
+        address = request.form.get('address', '').strip()
+        taste_preferences = request.form.get('taste_preferences', '').strip()
+        current_password = request.form.get('current_password', '')
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+
+        if not email:
+            flash('Địa chỉ email không được để trống!', 'danger')
+            orders = dao.get_orders_by_user(current_user.id)
+            return render_template('profile.html', user=current_user, orders=orders, active_tab=active_tab)
+
+        if not re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$', email):
+            flash('Địa chỉ email không đúng định dạng!', 'danger')
+            orders = dao.get_orders_by_user(current_user.id)
+            return render_template('profile.html', user=current_user, orders=orders, active_tab=active_tab)
+
+        if phone and not re.match(r'^\d{9,11}$', phone):
+            flash('Số điện thoại không hợp lệ (nhập từ 9 đến 11 chữ số, không chứa chữ cái)!', 'danger')
+            orders = dao.get_orders_by_user(current_user.id)
+            return render_template('profile.html', user=current_user, orders=orders, active_tab=active_tab)
+
+        conflict_err = dao.check_user_update_conflicts(user_id=current_user.id, email=email,
+                                                       phone=phone if phone else None)
+        if conflict_err:
+            flash(conflict_err, 'danger')
+            orders = dao.get_orders_by_user(current_user.id)
+            return render_template('profile.html', user=current_user, orders=orders, active_tab=active_tab)
+
+        updated_password = None
+        if current_password or new_password or confirm_password:
+            if not current_password:
+                flash('Vui lòng nhập mật khẩu hiện tại để đổi mật khẩu!', 'danger')
+                orders = dao.get_orders_by_user(current_user.id)
+                return render_template('profile.html', user=current_user, orders=orders, active_tab='tab-password')
+
+            if not dao.verify_password(current_password, current_user.password_hash):
+                flash('Mật khẩu hiện tại không chính xác!', 'danger')
+                orders = dao.get_orders_by_user(current_user.id)
+                return render_template('profile.html', user=current_user, orders=orders, active_tab='tab-password')
+
+            if len(new_password) < 6:
+                flash('Mật khẩu mới phải có tối thiểu 6 ký tự!', 'danger')
+                orders = dao.get_orders_by_user(current_user.id)
+                return render_template('profile.html', user=current_user, orders=orders, active_tab='tab-password')
+
+            if new_password != confirm_password:
+                flash('Mật khẩu mới và xác nhận mật khẩu không trùng khớp!', 'danger')
+                orders = dao.get_orders_by_user(current_user.id)
+                return render_template('profile.html', user=current_user, orders=orders, active_tab='tab-password')
+
+            updated_password = new_password
+
+        try:
+            dao.update_user_profile(
+                user_id=current_user.id,
+                email=email,
+                phone=phone,
+                address=address,
+                taste_preferences=taste_preferences,
+                new_password=updated_password
+            )
+            if updated_password:
+                flash('Đổi mật khẩu thành công!', 'success')
+            else:
+                flash('Cập nhật thông tin hồ sơ thành công!', 'success')
+            return redirect('/profile')
+        except Exception as e:
+            flash(f'Lỗi khi cập nhật hồ sơ: {str(e)}', 'danger')
+            orders = dao.get_orders_by_user(current_user.id)
+            return render_template('profile.html', user=current_user, orders=orders, active_tab=active_tab)
+
+    orders = dao.get_orders_by_user(current_user.id)
+    return render_template('profile.html', user=current_user, orders=orders, active_tab='tab-info')
+
+
+@app.route('/orders')
+@login_required
+def orders_view():
+    status = request.args.get('status', 'ALL').strip().upper()
+    orders = dao.get_orders_by_user(current_user.id, status=status)
+    counts = dao.get_order_status_counts(current_user.id)
+    return render_template('orders.html', orders=orders, current_status=status, counts=counts)
+
+
+@app.route('/api/orders/<int:order_id>/cancel', methods=['POST'])
+@login_required
+def cancel_order_api(order_id):
+    success, message = dao.cancel_order(order_id, current_user.id)
+    if success:
+        return jsonify({'success': True, 'message': message})
+    return jsonify({'success': False, 'message': message}), 400
+
 
 @app.route('/api/restaurants', methods=['GET'])
 def restaurants():
@@ -187,11 +309,13 @@ def restaurant_dishes(restaurant_id):
             'error': str(err),
         }), 400
 
+
 @app.route('/cart')
 def cart_view():
     cart = session.get('cart', {})
     cart_stats = get_cart_stats(cart)
     return render_template('cart.html', cart_stats=cart_stats)
+
 
 @app.route('/api/carts', methods=['POST'])
 def add_to_cart():
@@ -225,6 +349,7 @@ def add_to_cart():
         return jsonify({"message": "Thành công!", "stats": get_cart_stats(cart)}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/carts/<restaurant_id>/<dish_id>', methods=['PUT'])
 def update_cart(restaurant_id, dish_id):
@@ -260,6 +385,7 @@ def update_cart(restaurant_id, dish_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/carts/<restaurant_id>/<dish_id>', methods=['DELETE'])
 def delete_cart(restaurant_id, dish_id):
     try:
@@ -285,10 +411,12 @@ def delete_cart(restaurant_id, dish_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/clear-cart')
 def clear_cart():
     session.pop('cart', None)
     return "Đã xóa sạch giỏ hàng cũ! <a href='/cart'>Quay lại giỏ hàng</a>"
+
 
 @app.route('/api/checkout/<int:restaurant_id>', methods=['POST'])
 def checkout_restaurant(restaurant_id):
@@ -304,7 +432,7 @@ def checkout_restaurant(restaurant_id):
 
         data = request.get_json() or {}
         delivery_address = data.get('delivery_address', "")
-        
+
         if not delivery_address.strip():
             return jsonify({"error": "Vui lòng cung cấp địa chỉ giao hàng!"}), 400
 
@@ -347,7 +475,7 @@ def checkout_restaurant(restaurant_id):
         del cart[res_id_str]
         session['cart'] = cart
         session.modified = True
-        
+
         db.session.commit()
 
         res_stats = get_cart_stats(cart)
@@ -363,20 +491,21 @@ def checkout_restaurant(restaurant_id):
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/restaurant/dashboard')
 @login_required
 def restaurant_dashboard():
     if current_user.role != RoleEnum.RESTAURANT:
         flash("Bạn không có quyền truy cập trang quản lý nhà hàng.", "danger")
         return redirect('/')
-        
+
     restaurant = Restaurant.query.filter_by(owner_id=current_user.id).first()
     if not restaurant:
         return "Tài khoản của bạn chưa được liên kết với nhà hàng nào.", 404
 
-    orders = Order.query.filter_by(restaurant_id=restaurant.id)\
-                  .order_by(Order.created_at.desc()).all()
-                  
+    orders = Order.query.filter_by(restaurant_id=restaurant.id) \
+        .order_by(Order.created_at.desc()).all()
+
     return render_template('restaurant_dashboard.html', restaurant=restaurant, orders=orders)
 
 
@@ -385,14 +514,14 @@ def restaurant_dashboard():
 def update_order_status(order_id):
     if current_user.role != RoleEnum.RESTAURANT:
         return jsonify({"error": "Không có quyền thực hiện thao tác này"}), 403
-        
+
     data = request.get_json()
     new_status_str = data.get('status')
-    
+
     order = Order.query.get(order_id)
     if not order:
         return jsonify({"error": "Không tìm thấy đơn hàng"}), 404
-        
+
     if order.restaurant.owner_id != current_user.id:
         return jsonify({"error": "Đơn hàng này không thuộc nhà hàng của bạn"}), 403
 
@@ -400,6 +529,7 @@ def update_order_status(order_id):
         new_status = OrderStatusEnum[new_status_str]
         order.status = new_status
         db.session.commit()
-        return jsonify({"status": "success", "message": f"Đã cập nhật trạng thái đơn #{order.id} thành {new_status.value}"}), 200
+        return jsonify(
+            {"status": "success", "message": f"Đã cập nhật trạng thái đơn #{order.id} thành {new_status.value}"}), 200
     except KeyError:
         return jsonify({"error": "Trạng thái không hợp lệ"}), 400

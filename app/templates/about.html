@@ -15,10 +15,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 
     <style>
-        /* ==========================================================================
-           ABOUT US PAGE - POLISHED DESIGN & HIGH CONTRAST THEME
-           ========================================================================== */
-        
+                
         .main-container.single-column {
             display: block !important;
             width: 100% !important;
@@ -38,8 +35,7 @@
             box-sizing: border-box;
         }
 
-        /* Hero Banner */
-        .about-hero-box {
+                .about-hero-box {
             background: linear-gradient(135deg, #faf5eb 0%, #f4ebd9 100%);
             border: 1.5px solid #dfcfb7;
             border-radius: 14px;
@@ -92,8 +88,7 @@
             margin: 0 auto;
         }
 
-        /* Section Headings */
-        .section-header-wrap {
+                .section-header-wrap {
             text-align: center;
             margin-bottom: 26px;
         }
@@ -124,8 +119,7 @@
             color: #4a4237;
         }
 
-        /* Author Cards */
-        .authors-grid {
+                .authors-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 24px;
@@ -188,8 +182,7 @@
             line-height: 1.6;
         }
 
-        /* Two-Column Feature Breakdown (Customer vs Restaurant) */
-        .features-comparison-grid {
+                .features-comparison-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
             gap: 24px;
@@ -250,8 +243,7 @@
             margin-top: 2px;
         }
 
-        /* Item Row */
-        .feature-row-item {
+                .feature-row-item {
             display: flex;
             align-items: flex-start;
             gap: 12px;
@@ -294,8 +286,7 @@
             line-height: 1.55;
         }
 
-        /* Workflow 4 Steps Banner */
-        .workflow-box {
+                .workflow-box {
             background: #f7f2e7;
             border: 1.5px solid #decbb2;
             border-radius: 14px;
@@ -346,8 +337,7 @@
             line-height: 1.45;
         }
 
-        /* AI Features Section */
-        .ai-container-box {
+                .ai-container-box {
             background: linear-gradient(135deg, #183823 0%, #0f2416 100%);
             border: 2px solid #ecd8ba;
             border-radius: 14px;
@@ -398,8 +388,7 @@
             line-height: 1.6;
         }
 
-        /* CTA Section */
-        .cta-bottom-card {
+                .cta-bottom-card {
             background: #faf4e6;
             border: 2px dashed #d6be99;
             border-radius: 14px;
@@ -453,19 +442,53 @@
 <body>
 
 <div class="site-wrapper">
-    <!-- Main Navigation -->
-    <nav class="main-nav" id="topNav">
+        <nav class="main-nav" id="topNav">
         <div class="nav-container">
             <div class="nav-links-left">
                 <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
                 <a href="/#restaurants" class="nav-link"><i class="fa-solid fa-store"></i> Restaurant</a>
                 <a href="/about" class="nav-link active"><i class="fa-solid fa-circle-info"></i> About Us</a>
+                <a href="/orders" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử đơn hàng</a>
             </div>
             <div class="nav-auth-right">
                 {% if current_user and current_user.is_authenticated %}
-                <div class="nav-user-greeting">
-                    <i class="fa-solid fa-circle-user"></i>
-                    <span>Chào, <strong>{{ current_user.username }}</strong></span>
+                <div class="user-dropdown-wrapper">
+                    <button type="button" class="user-dropdown-toggle" id="userDropdownBtn" onclick="toggleUserDropdown(event)" title="Nhấn để xem tùy chọn tài khoản">
+                        <i class="fa-solid fa-circle-user"></i>
+                        <span>Chào, <strong>{{ current_user.username }}</strong></span>
+                        <i class="fa-solid fa-chevron-down dropdown-arrow"></i>
+                    </button>
+
+                    <div class="user-dropdown-menu" id="userDropdownMenu">
+                        <div class="user-dropdown-header">
+                            <div class="user-avatar-small">{{ current_user.username[0]|upper }}</div>
+                            <div class="user-info-text">
+                                <div class="user-name-text">{{ current_user.username }}</div>
+                                <div class="user-role-text">
+                                    {% if current_user.role.value == 'ADMIN' %}Quản trị viên{% elif current_user.role.value == 'RESTAURANT' %}Chủ nhà hàng{% else %}Khách hàng{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="/profile" class="dropdown-item">
+                            <i class="fa-solid fa-id-card"></i>
+                            <span>Hồ sơ cá nhân</span>
+                        </a>
+                        <a href="/orders" class="dropdown-item">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <span>Lịch sử đơn hàng</span>
+                        </a>
+                        {% if current_user.role.value == 'RESTAURANT' %}
+                        <a href="/restaurant/dashboard" class="dropdown-item">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span>Quản lý nhà hàng</span>
+                        </a>
+                        {% endif %}
+                        <a href="/cart" class="dropdown-item">
+                            <i class="fa-solid fa-basket-shopping"></i>
+                            <span>Giỏ hàng của tôi</span>
+                        </a>
+                    </div>
                 </div>
                 <a href="/logout" class="nav-logout-btn">
                     <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
@@ -479,8 +502,7 @@
         </div>
     </nav>
 
-    <!-- Header Logo Banner -->
-    <header class="site-header">
+        <header class="site-header">
         <div class="brand-banner">
             <a href="/">
                 <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="FOOD SHOPPE" class="brand-svg">
@@ -488,13 +510,11 @@
         </div>
     </header>
 
-    <!-- Main Content (Full Width Single Column) -->
-    <main class="main-container single-column">
+        <main class="main-container single-column">
 
         <div class="about-main-wrapper">
 
-            <!-- 1. HERO BANNER: GIỚI THIỆU ĐỀ TÀI -->
-            <section class="about-hero-box">
+                        <section class="about-hero-box">
                 <div class="topic-badge">
                     <i class="fa-solid fa-graduation-cap" style="color: #ffd269;"></i> ĐỀ TÀI 2: HỆ THỐNG ĐẶT MÓN ĂN TRỰC TUYẾN
                 </div>
@@ -506,8 +526,7 @@
                 </p>
             </section>
 
-            <!-- 2. NHÓM TÁC GIẢ THỰC HIỆN ĐỀ TÀI -->
-            <section style="margin-bottom: 40px;">
+                        <section style="margin-bottom: 40px;">
                 <div class="section-header-wrap">
                     <span class="section-tag">Development Team</span>
                     <h2 class="section-main-title">
@@ -517,8 +536,7 @@
                 </div>
 
                 <div class="authors-grid">
-                    <!-- Tác giả 1: Nguyễn Đinh Nhật Trường -->
-                    <div class="author-card">
+                                        <div class="author-card">
                         <div class="author-avatar-wrap">
                             <i class="fa-solid fa-user-tie"></i>
                         </div>
@@ -529,8 +547,7 @@
                         </p>
                     </div>
 
-                    <!-- Tác giả 2: Nguyễn Văn Tuấn -->
-                    <div class="author-card">
+                                        <div class="author-card">
                         <div class="author-avatar-wrap">
                             <i class="fa-solid fa-user-gear"></i>
                         </div>
@@ -543,8 +560,7 @@
                 </div>
             </section>
 
-            <!-- 3. QUY TRÌNH HOẠT ĐỘNG 4 BƯỚC -->
-            <section class="workflow-box">
+                        <section class="workflow-box">
                 <div class="section-header-wrap" style="margin-bottom: 16px;">
                     <span class="section-tag">How It Works</span>
                     <h2 class="section-main-title" style="font-size: 22px;">Quy Trình Kết Nối Đặt Món Liền Mạch</h2>
@@ -575,8 +591,7 @@
                 </div>
             </section>
 
-            <!-- 4. CHI TIẾT CHỨC NĂNG CUNG CẤP THEO YÊU CẦU ĐỀ TÀI -->
-            <section style="margin-bottom: 40px;">
+                        <section style="margin-bottom: 40px;">
                 <div class="section-header-wrap">
                     <span class="section-tag">Core Features</span>
                     <h2 class="section-main-title">
@@ -587,8 +602,7 @@
 
                 <div class="features-comparison-grid">
 
-                    <!-- CỘT 1: DÀNH CHO KHÁCH HÀNG (CUSTOMER) -->
-                    <div class="feature-column-card">
+                                        <div class="feature-column-card">
                         <div class="feature-col-header">
                             <div class="feature-col-icon icon-customer">
                                 <i class="fa-solid fa-user-tag"></i>
@@ -599,8 +613,7 @@
                             </div>
                         </div>
 
-                        <!-- Yêu cầu 1 -->
-                        <div class="feature-row-item">
+                                                <div class="feature-row-item">
                             <i class="fa-solid fa-magnifying-glass feature-row-icon icon-green"></i>
                             <div>
                                 <div class="feature-row-title">Yêu cầu 1: Tìm kiếm và duyệt nhà hàng</div>
@@ -610,8 +623,7 @@
                             </div>
                         </div>
 
-                        <!-- Yêu cầu 2 -->
-                        <div class="feature-row-item">
+                                                <div class="feature-row-item">
                             <i class="fa-solid fa-utensils feature-row-icon icon-green"></i>
                             <div>
                                 <div class="feature-row-title">Yêu cầu 2: Xem thực đơn và thêm món vào giỏ</div>
@@ -621,8 +633,7 @@
                             </div>
                         </div>
 
-                        <!-- Yêu cầu 3 -->
-                        <div class="feature-row-item">
+                                                <div class="feature-row-item">
                             <i class="fa-solid fa-cart-shopping feature-row-icon icon-green"></i>
                             <div>
                                 <div class="feature-row-title">Yêu cầu 3: Quản lý giỏ hàng thông minh</div>
@@ -632,8 +643,7 @@
                             </div>
                         </div>
 
-                        <!-- Yêu cầu 4 -->
-                        <div class="feature-row-item">
+                                                <div class="feature-row-item">
                             <i class="fa-solid fa-credit-card feature-row-icon icon-green"></i>
                             <div>
                                 <div class="feature-row-title">Yêu cầu 4: Đặt hàng và thanh toán an toàn</div>
@@ -644,8 +654,7 @@
                         </div>
                     </div>
 
-                    <!-- CỘT 2: DÀNH CHO NHÀ HÀNG & ĐỐI TÁC (RESTAURANT) -->
-                    <div class="feature-column-card">
+                                        <div class="feature-column-card">
                         <div class="feature-col-header">
                             <div class="feature-col-icon icon-restaurant">
                                 <i class="fa-solid fa-store"></i>
@@ -656,8 +665,7 @@
                             </div>
                         </div>
 
-                        <!-- Yêu cầu 5 -->
-                        <div class="feature-row-item">
+                                                <div class="feature-row-item">
                             <i class="fa-solid fa-bell-concierge feature-row-icon icon-gold"></i>
                             <div>
                                 <div class="feature-row-title">Yêu cầu 5: Tiếp nhận và xác nhận đơn hàng</div>
@@ -667,8 +675,7 @@
                             </div>
                         </div>
 
-                        <!-- Quản lý thực đơn -->
-                        <div class="feature-row-item">
+                                                <div class="feature-row-item">
                             <i class="fa-solid fa-book-open feature-row-icon icon-gold"></i>
                             <div>
                                 <div class="feature-row-title">Quản lý thực đơn &amp; phân loại món</div>
@@ -678,8 +685,7 @@
                             </div>
                         </div>
 
-                        <!-- Mở rộng khách hàng -->
-                        <div class="feature-row-item">
+                                                <div class="feature-row-item">
                             <i class="fa-solid fa-chart-line feature-row-icon icon-gold"></i>
                             <div>
                                 <div class="feature-row-title">Tiếp cận khách hàng &amp; tối ưu chi phí</div>
@@ -689,8 +695,7 @@
                             </div>
                         </div>
 
-                        <!-- Ràng buộc phân quyền -->
-                        <div class="feature-row-item">
+                                                <div class="feature-row-item">
                             <i class="fa-solid fa-shield-halved feature-row-icon icon-gold"></i>
                             <div>
                                 <div class="feature-row-title">Phân quyền tài khoản chuẩn mực</div>
@@ -704,8 +709,7 @@
                 </div>
             </section>
 
-            <!-- 5. TÍNH NĂNG AI & GỢI Ý MÓN ĂN THÔNG MINH -->
-            <section class="ai-container-box">
+                        <section class="ai-container-box">
                 <div style="text-align: center; margin-bottom: 14px;">
                     <span style="background: rgba(255, 210, 105, 0.2); color: #ffd269; border: 1px solid #ffd269; font-size: 12px; font-weight: 800; padding: 4px 14px; border-radius: 999px; display: inline-block; margin-bottom: 8px;">
                         <i class="fa-solid fa-brain"></i> TÍNH NĂNG MỞ RỘNG ĐỀ TÀI
@@ -719,8 +723,7 @@
                 </div>
 
                 <div class="ai-grid">
-                    <!-- AI 1 -->
-                    <div class="ai-card">
+                                        <div class="ai-card">
                         <div class="ai-card-icon">
                             <i class="fa-solid fa-wand-magic-sparkles"></i>
                         </div>
@@ -730,8 +733,7 @@
                         </p>
                     </div>
 
-                    <!-- AI 2 -->
-                    <div class="ai-card">
+                                        <div class="ai-card">
                         <div class="ai-card-icon">
                             <i class="fa-solid fa-burger"></i>
                         </div>
@@ -741,8 +743,7 @@
                         </p>
                     </div>
 
-                    <!-- AI 3 -->
-                    <div class="ai-card">
+                                        <div class="ai-card">
                         <div class="ai-card-icon">
                             <i class="fa-solid fa-comments-dollar"></i>
                         </div>
@@ -754,8 +755,7 @@
                 </div>
             </section>
 
-            <!-- 6. CALL TO ACTION -->
-            <section class="cta-bottom-card">
+                        <section class="cta-bottom-card">
                 <h3 style="font-family: 'Playfair Display', Georgia, serif; color: #193824; font-size: 21px; font-weight: 800; margin-bottom: 8px;">
                     Sẵn Sàng Trải Nghiệm Hệ Thống Ẩm Thực?
                 </h3>
@@ -776,14 +776,12 @@
 
     </main>
 
-    <!-- Footer -->
-    <footer class="site-footer">
+        <footer class="site-footer">
         <p>© 2026 Food Shoppe • Deli • Market • Catering. Đề tài phát triển bởi <strong>Nguyễn Đinh Nhật Trường</strong> &amp; <strong>Nguyễn Văn Tuấn</strong>.</p>
         <p style="margin-top: 4px; font-size: 12px; opacity: 0.85;">Dịch vụ ẩm thực thủ công tươi ngon &amp; nền tảng đặt món trung gian tin cậy mỗi ngày.</p>
     </footer>
 </div>
 
-<!-- Floating Circular Cart Button (Chatbot Style) -->
 <a href="/cart" class="floating-cart-btn" id="floatingCartBtn" title="Xem giỏ hàng" aria-label="Xem giỏ hàng">
     <i class="fa-solid fa-cart-shopping"></i>
     <span class="floating-cart-badge cart-counter" id="floatingCartBadge">{{ cart_stats.total_quantity if cart_stats else 0 }}</span>
@@ -791,5 +789,6 @@
 </a>
 
 <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+<script src="{{ url_for('static', filename='js/nav.js') }}"></script>
 </body>
 </html>

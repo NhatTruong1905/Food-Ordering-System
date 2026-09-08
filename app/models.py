@@ -24,6 +24,7 @@ class PaymentMethodEnum(enum.Enum):
     CASH = "CASH"
     CREDIT_CARD = "CREDIT_CARD"
     E_WALLET = "E_WALLET"
+    VNPAY = "VNPAY"
 
 class PaymentStatusEnum(enum.Enum):
     PENDING = "PENDING"
@@ -49,6 +50,7 @@ class User(BaseModel, UserMixin):
     phone = db.Column(db.String(20), unique=True, nullable=True)
     role = db.Column(db.Enum(RoleEnum), default=RoleEnum.CUSTOMER, nullable=False)
 
+    address = db.Column(db.String(255), nullable=True)
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
     taste_preferences = db.Column(db.Text, nullable=True)
@@ -187,6 +189,7 @@ def seed_data():
         email="admin@foodshoppe.vn",
         phone="0901000001",
         role=RoleEnum.ADMIN,
+        address="12 Lê Lợi, Bến Nghé, Quận 1, TP.HCM",
         latitude=10.776889,
         longitude=106.700806,
         taste_preferences="Tất cả các món"
@@ -198,6 +201,7 @@ def seed_data():
         email="an.nguyen@gmail.com",
         phone="0903000004",
         role=RoleEnum.CUSTOMER,
+        address="123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM",
         latitude=10.772540,
         longitude=106.698020,
         taste_preferences="cay, đậm đà, thích thịt bò, pizza, steak"
@@ -209,6 +213,7 @@ def seed_data():
         email="binh.tran@gmail.com",
         phone="0903000005",
         role=RoleEnum.CUSTOMER,
+        address="45 Trương Định, Phường 6, Quận 3, TP.HCM",
         latitude=10.785620,
         longitude=106.695430,
         taste_preferences="ăn chay, thanh đạm, ít dầu mỡ, nhiều rau, organic"
@@ -220,6 +225,7 @@ def seed_data():
         email="chi.le@gmail.com",
         phone="0903000006",
         role=RoleEnum.CUSTOMER,
+        address="78 Nam Kỳ Khởi Nghĩa, Phường 7, Quận 3, TP.HCM",
         latitude=10.768910,
         longitude=106.692340,
         taste_preferences="sushi, hải sản tươi sống, dimsum, món thái"
