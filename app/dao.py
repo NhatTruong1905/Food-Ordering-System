@@ -1,7 +1,7 @@
 import bcrypt
 from sqlalchemy import or_
 from app import db
-from app.models import Restaurant, Dish, User, RoleEnum
+from app.models import Restaurant, Dish, User, RoleEnum, Order, OrderStatusEnum
 
 
 def hash_password(password: str) -> str:
@@ -36,17 +36,84 @@ def check_user_exists(username=None, email=None, phone=None):
         return "Số điện thoại này đã được sử dụng!"
     return None
 
-def add_user(username, password, email, phone=None, role=RoleEnum.CUSTOMER):
+def add_user(username, password, email, phone=None, address=None, role=RoleEnum.CUSTOMER):
     user = User(
         username=username.strip(),
         password_hash=hash_password(password),
         email=email.strip(),
         phone=phone.strip() if phone else None,
+        address=address.strip() if address else None,
         role=role
     )
     db.session.add(user)
     db.session.commit()
     return user
+
+def check_user_update_conflicts(user_id, email=None, phone=None):
+    if email:
+        existing = User.query.filter(User.email == email.strip(), User.id != user_id).first()
+        if existing:
+            return "Email này đã được sử dụng bởi tài khoản khác!"
+    if phone and phone.strip():
+        existing = User.query.filter(User.phone == phone.strip(), User.id != user_id).first()
+        if existing:
+            return "Số điện thoại này đã được sử dụng bởi tài khoản khác!"
+    return None
+
+def update_user_profile(user_id, email, phone=None, address=None, taste_preferences=None, new_password=None):
+    user = User.query.get(user_id)
+    if not user:
+        return None, "Người dùng không tồn tại!"
+
+    if email:
+        user.email = email.strip()
+    user.phone = phone.strip() if phone and phone.strip() else None
+    user.address = address.strip() if address and address.strip() else None
+    user.taste_preferences = taste_preferences.strip() if taste_preferences and taste_preferences.strip() else None
+
+    if new_password and new_password.strip():
+        user.password_hash = hash_password(new_password.strip())
+
+    db.session.commit()
+    return user, None
+
+def get_orders_by_user(user_id, status=None):
+    query = Order.query.filter_by(user_id=user_id)
+    if status and status != 'ALL':
+        try:
+            status_enum = OrderStatusEnum[status]
+            query = query.filter(Order.status == status_enum)
+        except KeyError:
+            pass
+    return query.order_by(Order.created_at.desc()).all()
+
+def get_order_status_counts(user_id):
+    orders = Order.query.filter_by(user_id=user_id).all()
+    counts = {
+        'ALL': len(orders),
+        'PENDING': 0,
+        'PREPARING': 0,
+        'DELIVERING': 0,
+        'COMPLETED': 0,
+        'CANCELLED': 0
+    }
+    for o in orders:
+        val = o.status.value
+        if val in counts:
+            counts[val] += 1
+        elif val == 'CONFIRMED':
+            counts['PREPARING'] += 1
+    return counts
+
+def cancel_order(order_id, user_id):
+    order = Order.query.filter_by(id=order_id, user_id=user_id).first()
+    if not order:
+        return False, "Không tìm thấy đơn hàng!"
+    if order.status != OrderStatusEnum.PENDING:
+        return False, "Chỉ có thể hủy đơn hàng khi đơn đang ở trạng thái Chờ xác nhận!"
+    order.status = OrderStatusEnum.CANCELLED
+    db.session.commit()
+    return True, "Hủy đơn hàng thành công!"
 
 def get_user_by_id(id):
     return User.query.get(id)

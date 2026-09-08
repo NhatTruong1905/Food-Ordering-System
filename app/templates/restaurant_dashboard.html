@@ -14,25 +14,55 @@
 <body>
 
 <div class="site-wrapper">
-    <!-- Navbar -->
     <nav class="main-nav" id="topNav">
         <div class="nav-container">
             <div class="nav-links-left">
                 <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Trang chủ</a>
             </div>
             <div class="nav-auth-right">
-                <div class="nav-user-greeting" style="background: rgba(255,210,105,0.2); border-color:#c99834;">
-                    <i class="fa-solid fa-store" style="color: #ffd269;"></i>
-                    <span>Cửa hàng: <strong>{{ current_user.username }}</strong></span>
+                {% if current_user and current_user.is_authenticated %}
+                <div class="user-dropdown-wrapper">
+                    <button type="button" class="user-dropdown-toggle" id="userDropdownBtn" onclick="toggleUserDropdown(event)" style="background: rgba(255,210,105,0.2); border-color:#c99834;" title="Nhấn để xem tùy chọn tài khoản">
+                        <i class="fa-solid fa-store" style="color: #ffd269;"></i>
+                        <span>Cửa hàng: <strong>{{ current_user.username }}</strong></span>
+                        <i class="fa-solid fa-chevron-down dropdown-arrow"></i>
+                    </button>
+
+                    <div class="user-dropdown-menu" id="userDropdownMenu">
+                        <div class="user-dropdown-header">
+                            <div class="user-avatar-small">{{ current_user.username[0]|upper }}</div>
+                            <div class="user-info-text">
+                                <div class="user-name-text">{{ current_user.username }}</div>
+                                <div class="user-role-text">Chủ nhà hàng</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="/profile" class="dropdown-item">
+                            <i class="fa-solid fa-id-card"></i>
+                            <span>Hồ sơ cá nhân</span>
+                        </a>
+                        <a href="/orders" class="dropdown-item">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <span>Lịch sử đơn hàng</span>
+                        </a>
+                        <a href="/restaurant/dashboard" class="dropdown-item">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span>Quản lý nhà hàng</span>
+                        </a>
+                        <a href="/cart" class="dropdown-item">
+                            <i class="fa-solid fa-basket-shopping"></i>
+                            <span>Giỏ hàng</span>
+                        </a>
+                    </div>
                 </div>
                 <a href="/logout" class="nav-logout-btn">
                     <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
                 </a>
+                {% endif %}
             </div>
         </div>
     </nav>
 
-    <!-- Header Logo -->
     <header class="site-header">
         <div class="brand-banner">
             <a href="/">
@@ -109,7 +139,6 @@ function updateStatus(orderId, newStatus) {
         if(data.error) {
             alert("Lỗi: " + data.error);
         } else {
-            // Thay vì dùng Toast, tạm dùng Alert để chủ nhà hàng chắc chắn nhận được thông báo
             alert("Thành công: " + data.message);
         }
     })
@@ -119,5 +148,6 @@ function updateStatus(orderId, newStatus) {
     });
 }
 </script>
+<script src="{{ url_for('static', filename='js/nav.js') }}"></script>
 </body>
 </html>

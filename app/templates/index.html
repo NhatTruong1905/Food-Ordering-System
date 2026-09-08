@@ -9,7 +9,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Playfair+Display:ital,wght@0,500;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
           rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -24,12 +24,47 @@
                 <a href="/" class="nav-link active"><i class="fa-solid fa-house"></i> Home</a>
                 <a href="/#restaurants" class="nav-link"><i class="fa-solid fa-store"></i> Restaurant</a>
                 <a href="/about" class="nav-link"><i class="fa-solid fa-circle-info"></i> About Us</a>
+                <a href="/orders" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử đơn hàng</a>
             </div>
             <div class="nav-auth-right">
                 {% if current_user and current_user.is_authenticated %}
-                <div class="nav-user-greeting">
-                    <i class="fa-solid fa-circle-user"></i>
-                    <span>Chào, <strong>{{ current_user.username }}</strong></span>
+                <div class="user-dropdown-wrapper">
+                    <button type="button" class="user-dropdown-toggle" id="userDropdownBtn" onclick="toggleUserDropdown(event)" title="Nhấn để xem tùy chọn tài khoản">
+                        <i class="fa-solid fa-circle-user"></i>
+                        <span>Chào, <strong>{{ current_user.username }}</strong></span>
+                        <i class="fa-solid fa-chevron-down dropdown-arrow"></i>
+                    </button>
+
+                    <div class="user-dropdown-menu" id="userDropdownMenu">
+                        <div class="user-dropdown-header">
+                            <div class="user-avatar-small">{{ current_user.username[0]|upper }}</div>
+                            <div class="user-info-text">
+                                <div class="user-name-text">{{ current_user.username }}</div>
+                                <div class="user-role-text">
+                                    {% if current_user.role.value == 'ADMIN' %}Quản trị viên{% elif current_user.role.value == 'RESTAURANT' %}Chủ nhà hàng{% else %}Khách hàng{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="/profile" class="dropdown-item">
+                            <i class="fa-solid fa-id-card"></i>
+                            <span>Hồ sơ cá nhân</span>
+                        </a>
+                        <a href="/orders" class="dropdown-item">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <span>Lịch sử đơn hàng</span>
+                        </a>
+                        {% if current_user.role.value == 'RESTAURANT' %}
+                        <a href="/restaurant/dashboard" class="dropdown-item">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span>Quản lý nhà hàng</span>
+                        </a>
+                        {% endif %}
+                        <a href="/cart" class="dropdown-item">
+                            <i class="fa-solid fa-basket-shopping"></i>
+                            <span>Giỏ hàng của tôi</span>
+                        </a>
+                    </div>
                 </div>
                 <a href="/logout" class="nav-logout-btn">
                     <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
@@ -400,5 +435,6 @@
 
 <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script src="{{ url_for('static', filename='js/nav.js') }}"></script>
 </body>
 </html>

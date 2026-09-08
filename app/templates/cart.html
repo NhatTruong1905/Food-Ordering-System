@@ -6,7 +6,7 @@
     <title>Giỏ Hàng</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Playfair+Display:ital,wght@0,500;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
@@ -19,12 +19,47 @@
                 <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
                 <a href="/#restaurants" class="nav-link"><i class="fa-solid fa-store"></i> Restaurant</a>
                 <a href="/about" class="nav-link"><i class="fa-solid fa-circle-info"></i> About Us</a>
+                <a href="/orders" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử đơn hàng</a>
             </div>
             <div class="nav-auth-right">
                 {% if current_user and current_user.is_authenticated %}
-                <div class="nav-user-greeting">
-                    <i class="fa-solid fa-circle-user"></i>
-                    <span>Chào, <strong>{{ current_user.username }}</strong></span>
+                <div class="user-dropdown-wrapper">
+                    <button type="button" class="user-dropdown-toggle" id="userDropdownBtn" onclick="toggleUserDropdown(event)" title="Nhấn để xem tùy chọn tài khoản">
+                        <i class="fa-solid fa-circle-user"></i>
+                        <span>Chào, <strong>{{ current_user.username }}</strong></span>
+                        <i class="fa-solid fa-chevron-down dropdown-arrow"></i>
+                    </button>
+
+                    <div class="user-dropdown-menu" id="userDropdownMenu">
+                        <div class="user-dropdown-header">
+                            <div class="user-avatar-small">{{ current_user.username[0]|upper }}</div>
+                            <div class="user-info-text">
+                                <div class="user-name-text">{{ current_user.username }}</div>
+                                <div class="user-role-text">
+                                    {% if current_user.role.value == 'ADMIN' %}Quản trị viên{% elif current_user.role.value == 'RESTAURANT' %}Chủ nhà hàng{% else %}Khách hàng{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="/profile" class="dropdown-item">
+                            <i class="fa-solid fa-id-card"></i>
+                            <span>Hồ sơ cá nhân</span>
+                        </a>
+                        <a href="/orders" class="dropdown-item">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <span>Lịch sử đơn hàng</span>
+                        </a>
+                        {% if current_user.role.value == 'RESTAURANT' %}
+                        <a href="/restaurant/dashboard" class="dropdown-item">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span>Quản lý nhà hàng</span>
+                        </a>
+                        {% endif %}
+                        <a href="/cart" class="dropdown-item">
+                            <i class="fa-solid fa-basket-shopping"></i>
+                            <span>Giỏ hàng của tôi</span>
+                        </a>
+                    </div>
                 </div>
                 <a href="/logout" class="nav-logout-btn">
                     <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
@@ -66,8 +101,6 @@
 
 
         <div id="cart-content-wrapper" {% if total_qty == 0 %}style="display:none;"{% endif %}>
-
-            {# DUYỆT TỪNG NHÀ HÀNG TRONG SESSION #}
             {% if session.get('cart') %}
             {% for res_id, res_data in session['cart'].items() %}
                 {% if res_data.get('items') %}
@@ -124,7 +157,7 @@
                         </div>
 
                         {% if current_user and current_user.is_authenticated %}
-                            <button type="button" onclick="payRestaurant('{{ res_id }}')" style="background: #cda434; color: #000; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 13.5px;">
+                            <button type="button" onclick="payRestaurant('{{ res_id }}', 'Nhà hàng #{{ res_id }}', '{{ "{:,.0f}".format(ns.res_total) }}')" style="background: #cda434; color: #000; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 13.5px;">
                                 <i class="fa-solid fa-bag-shopping"></i> Đặt hàng nhà hàng này
                             </button>
                         {% else %}
@@ -142,7 +175,7 @@
 
             <div style="background: #2c4c3b; color: #fff; border-radius: 10px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
                 <div>
-                    <h3 style="margin: 0; font-family:'Cinzel', serif; font-size: 16px; color: #e5be58;">TỔNG TOÀN BỘ GIỎ HÀNG</h3>
+                    <h3 style="margin: 0; font-family:'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.5px; color: #e5be58;">TỔNG TOÀN BỘ GIỎ HÀNG</h3>
                     <span style="font-size: 13px; opacity: 0.85;">Tất cả nhà hàng</span>
                 </div>
 
@@ -162,6 +195,98 @@
     </footer>
 </div>
 
+<div id="checkoutModalBackdrop" class="checkout-modal-backdrop" style="display: none;">
+    <div class="checkout-modal-dialog">
+        <div class="checkout-modal-header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 38px; height: 38px; border-radius: 50%; background: #cda434; color: #000; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-family: 'Playfair Display', Georgia, serif; font-size: 19px; color: var(--primary-green-dark, #2c4c3b);">
+                        Xác Nhận Đặt Hàng
+                    </h3>
+                    <div style="font-size: 12.5px; color: #777;" id="modalResTitle">
+                        Nhà hàng
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn-close-modal" onclick="closeCheckoutModal()" aria-label="Đóng">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="checkout-modal-body">
+            <div class="order-summary-box">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 13.5px; color: #555;">Tổng tiền thanh toán:</span>
+                    <span id="modalResTotal" style="font-size: 20px; font-weight: 800; color: #c0392b; font-family: 'Plus Jakarta Sans', sans-serif;">
+                        0 ₫
+                    </span>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 18px;">
+                <label for="checkoutAddressInput" style="display: block; font-weight: 700; color: #333; margin-bottom: 6px; font-size: 13.5px;">
+                    <i class="fa-solid fa-location-dot" style="color: #cda434; margin-right: 4px;"></i> Địa chỉ giao hàng: <span style="color: #c92a2a;">*</span>
+                </label>
+                <textarea id="checkoutAddressInput" rows="2" class="form-control"
+                          placeholder="Nhập số nhà, tên đường, phường/xã, quận/huyện..."
+                          style="width: 100%; border: 1px solid #ebd9bf; border-radius: 6px; padding: 10px 12px; font-family: inherit; font-size: 13.5px; outline: none; resize: vertical; box-sizing: border-box;"></textarea>
+                <div style="font-size: 12px; color: #666; margin-top: 4px;" id="addressNoticeText">
+                    Vui lòng xác nhận hoặc nhập địa chỉ chính xác để nhận món nhanh nhất.
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: 700; color: #333; margin-bottom: 10px; font-size: 13.5px;">
+                    <i class="fa-solid fa-credit-card" style="color: #cda434; margin-right: 4px;"></i> Phương thức thanh toán: <span style="color: #c92a2a;">*</span>
+                </label>
+
+                <div class="payment-options-group" style="display: flex; flex-direction: column; gap: 10px;">
+                    <label class="payment-option-card active" id="card-method-CASH" onclick="selectPaymentMethod('CASH')">
+                        <input type="radio" name="checkout_payment_method" value="CASH" checked style="accent-color: var(--primary-green, #23592d);">
+                        <div class="payment-card-icon" style="background: rgba(39, 174, 96, 0.12); color: #27ae60;">
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 700; color: #2c4c3b; font-size: 14px;">Thanh toán khi nhận hàng (COD)</div>
+                            <div style="font-size: 12px; color: #777;">Thanh toán tiền mặt trực tiếp cho nhân viên giao hàng</div>
+                        </div>
+                    </label>
+
+                    <label class="payment-option-card" id="card-method-VNPAY" onclick="selectPaymentMethod('VNPAY')">
+                        <input type="radio" name="checkout_payment_method" value="VNPAY" style="accent-color: var(--primary-green, #23592d);">
+                        <div class="payment-card-icon" style="background: rgba(0, 92, 180, 0.12); color: #005cb4;">
+                            <i class="fa-solid fa-qrcode"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-weight: 700; color: #005cb4; font-size: 14px;">Cổng thanh toán VNPAY</span>
+                                <span style="background: #005cb4; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;">VNPAY-QR</span>
+                            </div>
+                            <div style="font-size: 12px; color: #777;">Quét mã QR, ứng dụng ngân hàng, ví điện tử VNPAY</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="checkout-modal-footer">
+            <button type="button" class="btn-cancel-modal" onclick="closeCheckoutModal()">
+                Hủy bỏ
+            </button>
+            <button type="button" class="btn-confirm-checkout" id="btnConfirmCheckout" onclick="submitCheckoutModal()">
+                <i class="fa-solid fa-check"></i> Xác Nhận Đặt Hàng
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.DEFAULT_USER_ADDRESS = "{{ (current_user.address or '')|replace('\"', '\\\"') if current_user and current_user.is_authenticated else '' }}";
+</script>
 <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+<script src="{{ url_for('static', filename='js/nav.js') }}"></script>
 </body>
 </html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch Sử & Theo Dõi Đơn Hàng | Food Shoppe</title>
+    <meta name="description" content="Theo dõi trạng thái và tiến trình đơn hàng đã đặt tại Food Shoppe.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="site-wrapper">
+    <nav class="main-nav" id="topNav">
+        <div class="nav-container">
+            <div class="nav-links-left">
+                <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="/#restaurants" class="nav-link"><i class="fa-solid fa-store"></i> Restaurant</a>
+                <a href="/about" class="nav-link"><i class="fa-solid fa-circle-info"></i> About Us</a>
+                <a href="/orders" class="nav-link active"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử đơn hàng</a>
+                <a href="/cart" class="nav-link"><i class="fa-solid fa-basket-shopping"></i> Giỏ hàng ({{ cart_stats.total_quantity if cart_stats else 0 }})</a>
+            </div>
+            <div class="nav-auth-right">
+                {% if current_user and current_user.is_authenticated %}
+                <div class="user-dropdown-wrapper">
+                    <button type="button" class="user-dropdown-toggle" id="userDropdownBtn" onclick="toggleUserDropdown(event)" title="Tài khoản">
+                        <i class="fa-solid fa-circle-user"></i>
+                        <span>Chào, <strong>{{ current_user.username }}</strong></span>
+                        <i class="fa-solid fa-chevron-down dropdown-arrow"></i>
+                    </button>
+
+                    <div class="user-dropdown-menu" id="userDropdownMenu">
+                        <div class="user-dropdown-header">
+                            <div class="user-avatar-small">{{ current_user.username[0]|upper }}</div>
+                            <div class="user-info-text">
+                                <div class="user-name-text">{{ current_user.username }}</div>
+                                <div class="user-role-text">
+                                    {% if current_user.role.value == 'ADMIN' %}Quản trị viên{% elif current_user.role.value == 'RESTAURANT' %}Chủ nhà hàng{% else %}Khách hàng{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="/profile" class="dropdown-item">
+                            <i class="fa-solid fa-id-card"></i>
+                            <span>Hồ sơ cá nhân</span>
+                        </a>
+                        <a href="/orders" class="dropdown-item">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <span>Lịch sử đơn hàng</span>
+                        </a>
+                        {% if current_user.role.value == 'RESTAURANT' %}
+                        <a href="/restaurant/dashboard" class="dropdown-item">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span>Quản lý nhà hàng</span>
+                        </a>
+                        {% endif %}
+                        <a href="/cart" class="dropdown-item">
+                            <i class="fa-solid fa-basket-shopping"></i>
+                            <span>Giỏ hàng của tôi</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="/logout" class="nav-logout-btn">
+                    <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                </a>
+                {% else %}
+                <a href="/login" class="nav-login-btn">
+                    <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <header class="site-header">
+        <div class="brand-banner">
+            <a href="/">
+                <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="FOOD SHOPPE" class="brand-svg">
+            </a>
+        </div>
+    </header>
+
+    <div class="page-breadcrumb-bar">
+        <div class="breadcrumb-left">
+            <a href="/" class="breadcrumb-link"><i class="fa-solid fa-house"></i> Trang chủ</a>
+            <span class="breadcrumb-separator"><i class="fa-solid fa-chevron-right"></i></span>
+            <span class="breadcrumb-current">Lịch sử đơn hàng</span>
+        </div>
+        <div class="breadcrumb-right">
+            <i class="fa-solid fa-box-archive" style="color: #cda434;"></i> Tổng số: <strong>{{ counts.ALL }}</strong> đơn hàng
+        </div>
+    </div>
+
+    <main class="orders-page-container">
+        <div class="orders-page-header">
+            <h1 style="font-family: 'Playfair Display', Georgia, serif; font-size: 28px; color: var(--primary-green-dark, #2c4c3b); margin-bottom: 6px;">
+                Lịch Sử &amp; Theo Dõi Đơn Hàng
+            </h1>
+            <p style="font-size: 14.5px; color: #2c4c3b; font-weight: 600; margin: 0;">
+                Theo dõi tiến trình tiếp nhận, chế biến và lộ trình vận chuyển của từng món ăn
+            </p>
+        </div>
+
+        <div class="orders-filter-bar">
+            <a href="/orders?status=ALL" class="order-filter-tab {% if current_status == 'ALL' or not current_status %}active{% endif %}">
+                <span>Tất cả</span>
+                <span class="order-filter-badge">{{ counts.ALL }}</span>
+            </a>
+            <a href="/orders?status=PENDING" class="order-filter-tab {% if current_status == 'PENDING' %}active{% endif %}">
+                <i class="fa-solid fa-hourglass-half"></i>
+                <span>Chờ xác nhận</span>
+                <span class="order-filter-badge">{{ counts.PENDING }}</span>
+            </a>
+            <a href="/orders?status=PREPARING" class="order-filter-tab {% if current_status == 'PREPARING' %}active{% endif %}">
+                <i class="fa-solid fa-utensils"></i>
+                <span>Đang chuẩn bị</span>
+                <span class="order-filter-badge">{{ counts.PREPARING }}</span>
+            </a>
+            <a href="/orders?status=DELIVERING" class="order-filter-tab {% if current_status == 'DELIVERING' %}active{% endif %}">
+                <i class="fa-solid fa-truck-fast"></i>
+                <span>Đang giao hàng</span>
+                <span class="order-filter-badge">{{ counts.DELIVERING }}</span>
+            </a>
+            <a href="/orders?status=COMPLETED" class="order-filter-tab {% if current_status == 'COMPLETED' %}active{% endif %}">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>Hoàn thành</span>
+                <span class="order-filter-badge">{{ counts.COMPLETED }}</span>
+            </a>
+            <a href="/orders?status=CANCELLED" class="order-filter-tab {% if current_status == 'CANCELLED' %}active{% endif %}">
+                <i class="fa-solid fa-ban"></i>
+                <span>Đã hủy</span>
+                <span class="order-filter-badge">{{ counts.CANCELLED }}</span>
+            </a>
+        </div>
+
+        {% if orders and orders|length > 0 %}
+            <div class="orders-list">
+                {% for order in orders %}
+                    <div class="order-card" id="order-card-{{ order.id }}">
+                        <div class="order-card-header">
+                            <div>
+                                <span class="order-id-title">Đơn hàng #{{ order.id }}</span>
+                                <span class="order-meta-date">
+                                    <i class="fa-regular fa-clock"></i> {{ order.created_at.strftime('%H:%M - %d/%m/%Y') if order.created_at else '' }}
+                                </span>
+                            </div>
+
+                            <div>
+                                {% if order.status.value == 'PENDING' %}
+                                    <span class="order-status-badge badge-pending">
+                                        <i class="fa-solid fa-hourglass-half"></i> Chờ xác nhận
+                                    </span>
+                                {% elif order.status.value == 'CONFIRMED' or order.status.value == 'PREPARING' %}
+                                    <span class="order-status-badge badge-preparing">
+                                        <i class="fa-solid fa-utensils"></i> Đang chuẩn bị
+                                    </span>
+                                {% elif order.status.value == 'DELIVERING' %}
+                                    <span class="order-status-badge badge-delivering">
+                                        <i class="fa-solid fa-truck-fast"></i> Đang giao hàng
+                                    </span>
+                                {% elif order.status.value == 'COMPLETED' %}
+                                    <span class="order-status-badge badge-completed">
+                                        <i class="fa-solid fa-circle-check"></i> Giao thành công
+                                    </span>
+                                {% elif order.status.value == 'CANCELLED' %}
+                                    <span class="order-status-badge badge-cancelled">
+                                        <i class="fa-solid fa-ban"></i> Đã hủy đơn
+                                    </span>
+                                {% else %}
+                                    <span class="order-status-badge badge-pending">
+                                        {{ order.status.value }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if order.status.value == 'CANCELLED' %}
+                            <div class="order-cancelled-banner">
+                                <i class="fa-solid fa-circle-xmark" style="font-size: 20px;"></i>
+                                <div>
+                                    <strong>Đơn hàng này đã bị hủy.</strong>
+                                    <div style="font-size: 12.5px; opacity: 0.9; margin-top: 2px;">
+                                        Cập nhật lúc: {{ order.updated_at.strftime('%H:%M - %d/%m/%Y') if order.updated_at else 'Gần đây' }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            {% set st = order.status.value %}
+                            {% set is_step1 = true %}
+                            {% set is_step2 = (st == 'CONFIRMED' or st == 'PREPARING' or st == 'DELIVERING' or st == 'COMPLETED') %}
+                            {% set is_step3 = (st == 'DELIVERING' or st == 'COMPLETED') %}
+                            {% set is_step4 = (st == 'COMPLETED') %}
+
+                            <div class="order-stepper-box">
+                                <div class="order-stepper">
+                                    <div class="stepper-line">
+                                        <div class="stepper-line-fill" style="width: {% if is_step4 %}100%{% elif is_step3 %}66%{% elif is_step2 %}33%{% else %}0%{% endif %};"></div>
+                                    </div>
+
+                                    <div class="stepper-step {% if is_step1 %}completed{% endif %} {% if st == 'PENDING' %}active{% endif %}">
+                                        <div class="stepper-icon-circle">
+                                            <i class="fa-solid fa-receipt"></i>
+                                        </div>
+                                        <div class="stepper-step-title">Đặt hàng</div>
+                                        <div style="font-size: 11.5px; color: #2d3748; font-weight: 600; margin-top: 2px;">{{ order.created_at.strftime('%H:%M') if order.created_at else '' }}</div>
+                                    </div>
+
+                                    <div class="stepper-step {% if is_step2 %}completed{% endif %} {% if st == 'CONFIRMED' or st == 'PREPARING' %}active{% endif %}">
+                                        <div class="stepper-icon-circle">
+                                            <i class="fa-solid fa-utensils"></i>
+                                        </div>
+                                        <div class="stepper-step-title">Chuẩn bị món</div>
+                                        <div style="font-size: 11.5px; color: #2d3748; font-weight: 600; margin-top: 2px;">
+                                            {% if is_step2 %}Bếp nấu{% else %}Chờ duyệt{% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="stepper-step {% if is_step3 %}completed{% endif %} {% if st == 'DELIVERING' %}active{% endif %}">
+                                        <div class="stepper-icon-circle">
+                                            <i class="fa-solid fa-truck-fast"></i>
+                                        </div>
+                                        <div class="stepper-step-title">Đang giao</div>
+                                        <div style="font-size: 11.5px; color: #2d3748; font-weight: 600; margin-top: 2px;">
+                                            {% if is_step3 %}Shipper nhận{% else %}Lộ trình{% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="stepper-step {% if is_step4 %}completed{% endif %}">
+                                        <div class="stepper-icon-circle">
+                                            <i class="fa-solid fa-circle-check"></i>
+                                        </div>
+                                        <div class="stepper-step-title">Giao thành công</div>
+                                        <div style="font-size: 11.5px; color: #2d3748; font-weight: 600; margin-top: 2px;">
+                                            {% if is_step4 %}Hoàn tất{% else %}Đích đến{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <div style="margin-bottom: 14px; font-size: 14px; color: #111827; line-height: 1.7;">
+                            <div>
+                                <i class="fa-solid fa-store" style="color: #cda434; width: 20px;"></i>
+                                <strong style="color: #111827;">Nhà hàng:</strong> <span style="color: var(--primary-green-dark, #2c4c3b); font-weight: 600;">{{ order.restaurant.name if order.restaurant else 'Hệ thống Food Shoppe' }}</span>
+                            </div>
+                            <div style="margin-top: 4px;">
+                                <i class="fa-solid fa-location-dot" style="color: #cda434; width: 20px;"></i>
+                                <strong style="color: #111827;">Địa chỉ nhận món:</strong> <span>{{ order.delivery_address }}</span>
+                            </div>
+                            {% if order.payment %}
+                            <div style="margin-top: 4px;">
+                                <i class="fa-regular fa-credit-card" style="color: #cda434; width: 20px;"></i>
+                                <strong style="color: #111827;">Phương thức:</strong> <span>{{ 'Thanh toán tiền mặt (COD)' if order.payment.method.value == 'CASH' else order.payment.method.value }}</span>
+                                <span style="margin-left: 8px; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 12px; {% if order.payment.status.value == 'SUCCESS' %}background: #d4edda; color: #155724; border: 1px solid #c3e6cb;{% else %}background: #fff3cd; color: #856404; border: 1px solid #ffeeba;{% endif %}">
+                                    {{ 'Đã thanh toán' if order.payment.status.value == 'SUCCESS' else 'Chưa thanh toán' }}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="order-items-table" style="background: #faf8f4; border: 1.5px solid #ebd9bf; border-radius: 8px; padding: 12px 18px; margin-bottom: 16px;">
+                            {% for item in order.items %}
+                                <div class="order-item-row" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dotted #ebd9bf; font-size: 13.5px;">
+                                    <div>
+                                        <strong style="color: #111827;">{{ item.dish.name if item.dish else 'Món ngon' }}</strong>
+                                        <span style="color: #1a4224; font-weight: 700; background: #f4ecd9; padding: 2px 8px; border-radius: 4px; margin-left: 8px;">× {{ item.quantity }}</span>
+                                    </div>
+                                    <div style="font-weight: 700; color: var(--primary-green-dark, #2c4c3b);">
+                                        {{ "{:,.0f}".format(item.price_at_purchase * item.quantity) }} ₫
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="order-card-footer">
+                            <div style="font-size: 14.5px; font-weight: 700; color: #111827;">
+                                <span>Tổng tiền thanh toán:</span>
+                                <span class="order-total-highlight">{{ "{:,.0f}".format(order.total_amount) }} ₫</span>
+                            </div>
+
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                {% if order.status.value == 'PENDING' %}
+                                    <button type="button" class="btn-cancel-order" onclick="cancelOrder({{ order.id }})">
+                                        <i class="fa-solid fa-xmark"></i> Hủy đơn hàng
+                                    </button>
+                                {% endif %}
+
+                                <a href="/#restaurants" class="btn-reorder-link">
+                                    <i class="fa-solid fa-utensils"></i> Khám phá thêm món
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="background: #faf6ea; border: 2px dashed #ecd8ba; border-radius: 14px; padding: 60px 20px; text-align: center; margin-top: 10px;">
+                <div style="width: 80px; height: 80px; background: rgba(205, 164, 52, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: #cda434; font-size: 36px;">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+                <h3 style="font-family: 'Playfair Display', Georgia, serif; font-size: 22px; color: var(--primary-green-dark, #2c4c3b); margin: 0 0 8px;">
+                    Chưa Có Đơn Hàng Nào
+                </h3>
+                <p style="color: #777; font-size: 14px; max-width: 440px; margin: 0 auto 22px;">
+                    {% if current_status and current_status != 'ALL' %}
+                        Không tìm thấy đơn hàng nào ở trạng thái đã chọn.
+                    {% else %}
+                        Bạn chưa đặt đơn hàng nào tại Food Shoppe. Hãy khám phá ngay các món ăn tuyệt hảo và đặt món ngay hôm nay!
+                    {% endif %}
+                </p>
+                <a href="/#restaurants" class="btn-reorder-link" style="padding: 12px 24px; font-size: 14px;">
+                    <i class="fa-solid fa-magnifying-glass"></i> Khám phá nhà hàng ngay
+                </a>
+            </div>
+        {% endif %}
+    </main>
+
+    <footer class="site-footer">
+        <p>© 2026 Food Shoppe • Deli • Market • Catering. All rights reserved.</p>
+        <p style="margin-top: 4px; font-size: 12px; opacity: 0.85;">Dịch vụ ẩm thực thủ công tươi ngon &amp; nguyên liệu hảo hạng mỗi ngày.</p>
+    </footer>
+</div>
+
+<script>
+function cancelOrder(orderId) {
+    if (!confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${orderId} không?`)) {
+        return;
+    }
+
+    fetch(`/api/orders/${orderId}/cancel`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'Đã hủy đơn hàng thành công!');
+            window.location.reload();
+        } else {
+            alert(data.message || 'Không thể hủy đơn hàng này.');
+        }
+    })
+    .catch(err => {
+        console.error('Lỗi khi hủy đơn:', err);
+        alert('Đã xảy ra lỗi kết nối khi hủy đơn hàng.');
+    });
+}
+</script>
+
+<script src="{{ url_for('static', filename='js/nav.js') }}"></script>
+</body>
+</html>

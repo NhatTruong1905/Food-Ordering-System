@@ -25,4 +25,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 
 db = SQLAlchemy(app=app)
 login = LoginManager(app=app)
+login.login_view = 'login_view'
+login.login_message = 'Vui lòng đăng nhập để tiếp tục.'
+login.login_message_category = 'warning'
 

@@ -103,23 +103,86 @@ function deleteCart(restaurantId, dishId) {
     });
 }
 
-function payRestaurant(restaurantId) {
-    const address = prompt("Vui lòng nhập địa chỉ giao hàng của bạn (Số nhà, Đường, Quận...):", "");
-    if (address === null) return; // Bấm Cancel
-    
-    if (address.trim() === "") {
-        alert("Bạn phải nhập địa chỉ giao hàng để tiếp tục!");
+let currentCheckoutRestaurantId = null;
+
+function payRestaurant(restaurantId, restaurantName, totalAmount) {
+    currentCheckoutRestaurantId = restaurantId;
+
+    const modal = document.getElementById('checkoutModalBackdrop');
+    if (!modal) return;
+
+    const titleEl = document.getElementById('modalResTitle');
+    if (titleEl) {
+        titleEl.innerText = restaurantName || `Nhà hàng #${restaurantId}`;
+    }
+
+    const totalEl = document.getElementById('modalResTotal');
+    if (totalEl) {
+        totalEl.innerText = (totalAmount || '0') + ' ₫';
+    }
+
+    const addrInput = document.getElementById('checkoutAddressInput');
+    if (addrInput) {
+        const userAddr = (typeof window.DEFAULT_USER_ADDRESS !== 'undefined' && window.DEFAULT_USER_ADDRESS) ? window.DEFAULT_USER_ADDRESS : "";
+        addrInput.value = userAddr;
+    }
+
+    selectPaymentMethod('CASH');
+    modal.style.display = 'flex';
+}
+
+function closeCheckoutModal() {
+    const modal = document.getElementById('checkoutModalBackdrop');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    currentCheckoutRestaurantId = null;
+}
+
+function selectPaymentMethod(method) {
+    const cashRadio = document.querySelector('input[name="checkout_payment_method"][value="CASH"]');
+    const vnpayRadio = document.querySelector('input[name="checkout_payment_method"][value="VNPAY"]');
+    const cardCash = document.getElementById('card-method-CASH');
+    const cardVnpay = document.getElementById('card-method-VNPAY');
+
+    if (method === 'VNPAY') {
+        if (vnpayRadio) vnpayRadio.checked = true;
+        if (cardVnpay) cardVnpay.classList.add('active');
+        if (cardCash) cardCash.classList.remove('active');
+    } else {
+        if (cashRadio) cashRadio.checked = true;
+        if (cardCash) cardCash.classList.add('active');
+        if (cardVnpay) cardVnpay.classList.remove('active');
+    }
+}
+
+function submitCheckoutModal() {
+    if (!currentCheckoutRestaurantId) return;
+
+    const addrInput = document.getElementById('checkoutAddressInput');
+    const address = addrInput ? addrInput.value.trim() : "";
+
+    if (!address) {
+        alert("Vui lòng nhập địa chỉ giao hàng của bạn!");
+        if (addrInput) addrInput.focus();
         return;
     }
 
-    if (!confirm(`Xác nhận đặt đơn hàng cho Nhà hàng #${restaurantId} (Thanh toán tiền mặt - COD)?`)) return;
+    const selectedRadio = document.querySelector('input[name="checkout_payment_method"]:checked');
+    const paymentMethod = selectedRadio ? selectedRadio.value : 'CASH';
 
-    fetch(`/api/checkout/${restaurantId}`, {
+    const btn = document.getElementById('btnConfirmCheckout');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
+    }
+
+    fetch(`/api/checkout/${currentCheckoutRestaurantId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             delivery_address: address,
-            payment_method: 'CASH'
+            payment_method: paymentMethod
         })
     })
     .then(res => {
@@ -131,24 +194,56 @@ function payRestaurant(restaurantId) {
         return res.json();
     })
     .then(data => {
-        if (data.error) return alert("Lỗi: " + data.error);
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Xác Nhận Đặt Hàng';
+        }
 
-        alert(data.message);
+        if (data.error) {
+            return alert("Lỗi: " + data.error);
+        }
 
-        let resCard = document.getElementById(`cart-res-${restaurantId}`);
+        closeCheckoutModal();
+
+        if (paymentMethod === 'VNPAY') {
+            alert(`[VNPAY] Đặt hàng thành công! Mã đơn hàng: #${data.order_id}\nPhương thức thanh toán: Cổng VNPAY`);
+        } else {
+            alert(data.message || `Đặt hàng thành công! Mã đơn hàng: #${data.order_id}`);
+        }
+
+        const resId = currentCheckoutRestaurantId;
+        const resCard = document.getElementById(`cart-res-${resId}`);
         if (resCard) resCard.remove();
 
         if (data.grand_total_quantity === 0) {
             location.reload();
         } else {
-            document.querySelector('.cart-amount').innerText = data.grand_total_amount.toLocaleString('vi-VN');
+            const amtEl = document.querySelector('.cart-amount');
+            if (amtEl) amtEl.innerText = data.grand_total_amount.toLocaleString('vi-VN');
             document.querySelectorAll('.cart-counter').forEach(c => c.innerText = data.grand_total_quantity);
         }
     })
     .catch(err => {
-        if(err.message !== 'Unauthorized') {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Xác Nhận Đặt Hàng';
+        }
+        if (err.message !== 'Unauthorized') {
             console.error('Lỗi thanh toán:', err);
             alert("Đã xảy ra lỗi hệ thống khi đặt hàng.");
         }
     });
 }
+
+document.addEventListener('click', function (e) {
+    const modalBackdrop = document.getElementById('checkoutModalBackdrop');
+    if (e.target === modalBackdrop) {
+        closeCheckoutModal();
+    }
+});
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        closeCheckoutModal();
+    }
+});

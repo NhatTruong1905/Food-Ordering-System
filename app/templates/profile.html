@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hồ Sơ Cá Nhân | Food Shoppe</title>
+    <meta name="description" content="Quản lý thông tin cá nhân, địa chỉ nhận hàng và lịch sử đơn hàng tại Food Shoppe.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="site-wrapper">
+<nav class="main-nav" id="topNav">
+        <div class="nav-container">
+            <div class="nav-links-left">
+                <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="/#restaurants" class="nav-link"><i class="fa-solid fa-store"></i> Restaurant</a>
+                <a href="/about" class="nav-link"><i class="fa-solid fa-circle-info"></i> About Us</a>
+                <a href="/orders" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử đơn hàng</a>
+                <a href="/cart" class="nav-link"><i class="fa-solid fa-basket-shopping"></i> Giỏ hàng ({{ cart_stats.total_quantity if cart_stats else 0 }})</a>
+            </div>
+            <div class="nav-auth-right">
+                {% if current_user and current_user.is_authenticated %}
+                <div class="user-dropdown-wrapper">
+                    <button type="button" class="user-dropdown-toggle" id="userDropdownBtn" onclick="toggleUserDropdown(event)" title="Nhấn để xem tùy chọn tài khoản">
+                        <i class="fa-solid fa-circle-user"></i>
+                        <span>Chào, <strong>{{ current_user.username }}</strong></span>
+                        <i class="fa-solid fa-chevron-down dropdown-arrow"></i>
+                    </button>
+
+                    <div class="user-dropdown-menu" id="userDropdownMenu">
+                        <div class="user-dropdown-header">
+                            <div class="user-avatar-small">{{ current_user.username[0]|upper }}</div>
+                            <div class="user-info-text">
+                                <div class="user-name-text">{{ current_user.username }}</div>
+                                <div class="user-role-text">
+                                    {% if current_user.role.value == 'ADMIN' %}Quản trị viên{% elif current_user.role.value == 'RESTAURANT' %}Chủ nhà hàng{% else %}Khách hàng{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="/profile" class="dropdown-item">
+                            <i class="fa-solid fa-id-card"></i>
+                            <span>Hồ sơ cá nhân</span>
+                        </a>
+                        <a href="/orders" class="dropdown-item">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <span>Lịch sử đơn hàng</span>
+                        </a>
+                        {% if current_user.role.value == 'RESTAURANT' %}
+                        <a href="/restaurant/dashboard" class="dropdown-item">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span>Quản lý nhà hàng</span>
+                        </a>
+                        {% endif %}
+                        <a href="/cart" class="dropdown-item">
+                            <i class="fa-solid fa-basket-shopping"></i>
+                            <span>Giỏ hàng của tôi</span>
+                        </a>
+                    </div>
+                </div>
+                <a href="/logout" class="nav-logout-btn">
+                    <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                </a>
+                {% else %}
+                <a href="/login" class="nav-login-btn">
+                    <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+<header class="site-header">
+        <div class="brand-banner">
+            <a href="/">
+                <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="FOOD SHOPPE - DELI • MARKET • CATERING" class="brand-svg">
+            </a>
+        </div>
+    </header>
+    <div class="page-breadcrumb-bar">
+        <div class="breadcrumb-left">
+            <a href="/" class="breadcrumb-link"><i class="fa-solid fa-house"></i> Trang chủ</a>
+            <span class="breadcrumb-separator"><i class="fa-solid fa-chevron-right"></i></span>
+            <span class="breadcrumb-current">Hồ sơ tài khoản</span>
+        </div>
+        <div class="breadcrumb-right">
+            <i class="fa-regular fa-clock" style="color: #cda434;"></i> Cập nhật lần cuối: <strong>{{ current_user.updated_at.strftime('%d/%m/%Y %H:%M') if current_user.updated_at else 'Chưa có' }}</strong>
+        </div>
+    </div>
+    <main class="main-container single-column" style="max-width: 1100px; margin: 25px auto 50px; padding: 0 20px;">
+{% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div style="padding: 12px 18px; background: {% if category == 'success' %}#d4edda; color: #155724; border: 1px solid #c3e6cb;{% else %}#f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% endif %} border-radius: 8px; margin-bottom: 24px; font-size: 14px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                        <i class="fa-solid {% if category == 'success' %}fa-circle-check{% else %}fa-circle-exclamation{% endif %}" style="font-size: 18px;"></i>
+                        <span style="font-weight: 500;">{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+<div style="display: grid; grid-template-columns: 310px 1fr; gap: 28px; align-items: start;" class="profile-grid">
+<div style="background: #faf6ea; border: 2px solid #ecd8ba; border-radius: 12px; padding: 28px 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.05); text-align: center;">
+<div style="position: relative; width: 100px; height: 100px; margin: 0 auto 16px;">
+                    <div style="width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(135deg, var(--primary-green, #23592d), #14361a); color: #ecd8ba; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 800; font-family: 'Plus Jakarta Sans', sans-serif; border: 3px solid #cda434; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                        {{ current_user.username[0]|upper }}
+                    </div>
+                    <span style="position: absolute; bottom: 0; right: 0; background: #27ae60; width: 22px; height: 22px; border-radius: 50%; border: 3px solid #faf6ea;" title="Đang hoạt động"></span>
+                </div>
+
+                <h3 style="font-family: 'Playfair Display', Georgia, serif; font-size: 22px; color: var(--primary-green-dark, #2c4c3b); margin: 0 0 6px;">
+                    {{ current_user.username }}
+                </h3>
+<div style="margin-bottom: 16px;">
+                    {% if current_user.role.value == 'ADMIN' %}
+                        <span style="display: inline-flex; align-items: center; gap: 5px; background: #c0392b; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <i class="fa-solid fa-shield-halved"></i> Quản trị viên
+                        </span>
+                    {% elif current_user.role.value == 'RESTAURANT' %}
+                        <span style="display: inline-flex; align-items: center; gap: 5px; background: #cda434; color: #000; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <i class="fa-solid fa-utensils"></i> Chủ Nhà Hàng
+                        </span>
+                    {% else %}
+                        <span style="display: inline-flex; align-items: center; gap: 5px; background: var(--primary-green, #23592d); color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <i class="fa-solid fa-user-check"></i> Khách hàng thân thiết
+                        </span>
+                    {% endif %}
+                </div>
+<div style="text-align: left; background: #ffffff; border: 1.5px solid #dfcfb7; border-radius: 10px; padding: 16px 18px; margin-bottom: 20px; font-size: 13.5px; line-height: 1.8; color: #1f2937; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+                    <div>
+                        <i class="fa-solid fa-envelope" style="width: 20px; color: #cda434;"></i>
+                        <span style="font-weight: 700; color: #111827;">Email:</span>
+                        <div style="word-break: break-all; color: var(--primary-green-dark, #2c4c3b); font-weight: 600;">{{ current_user.email }}</div>
+                    </div>
+                    <div style="margin-top: 8px;">
+                        <i class="fa-solid fa-phone" style="width: 20px; color: #cda434;"></i>
+                        <span style="font-weight: 700; color: #111827;">Điện thoại:</span>
+                        <span style="color: #111827; font-weight: 600;">{{ current_user.phone or 'Chưa cập nhật' }}</span>
+                    </div>
+                    <div style="margin-top: 8px;">
+                        <i class="fa-solid fa-location-dot" style="width: 20px; color: #cda434;"></i>
+                        <span style="font-weight: 700; color: #111827;">Địa chỉ:</span>
+                        <div style="color: #111827; font-weight: 600;">{{ current_user.address or 'Chưa thiết lập' }}</div>
+                    </div>
+                    <div style="margin-top: 8px;">
+                        <i class="fa-regular fa-calendar-check" style="width: 20px; color: #cda434;"></i>
+                        <span style="font-weight: 700; color: #111827;">Ngày tham gia:</span>
+                        <span style="color: #111827; font-weight: 600;">{{ current_user.created_at.strftime('%d/%m/%Y') if current_user.created_at else 'Gần đây' }}</span>
+                    </div>
+                </div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                    <div style="background: #ffffff; border: 1.5px solid #dfcfb7; border-radius: 8px; padding: 12px 10px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+                        <div style="font-size: 22px; font-weight: 800; color: var(--primary-green-dark, #2c4c3b); font-family: 'Plus Jakarta Sans', sans-serif;">
+                            {{ orders|length }}
+                        </div>
+                        <div style="font-size: 12.5px; color: #111827; font-weight: 700; margin-top: 2px;">Đơn hàng</div>
+                    </div>
+                    <div style="background: #ffffff; border: 1.5px solid #dfcfb7; border-radius: 8px; padding: 12px 10px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+                        <div style="font-size: 22px; font-weight: 800; color: #b8860b; font-family: 'Plus Jakarta Sans', sans-serif;">
+                            {{ current_user.reviews|length if current_user.reviews else 0 }}
+                        </div>
+                        <div style="font-size: 12.5px; color: #111827; font-weight: 700; margin-top: 2px;">Đánh giá</div>
+                    </div>
+                </div>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+                    {% if current_user.role.value == 'RESTAURANT' %}
+                    <a href="/restaurant/dashboard" style="background: #e67e22; color: #fff; text-decoration: none; padding: 10px; border-radius: 6px; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s;">
+                        <i class="fa-solid fa-gauge-high"></i> Quản Lý Nhà Hàng
+                    </a>
+                    {% endif %}
+
+                    <a href="/cart" style="background: var(--primary-green, #23592d); color: #fff; text-decoration: none; padding: 10px; border-radius: 6px; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s;">
+                        <i class="fa-solid fa-basket-shopping"></i> Xem Giỏ Hàng Của Bạn
+                    </a>
+
+                    <a href="/logout" style="background: transparent; color: #c0392b; border: 1.5px solid #c0392b; text-decoration: none; padding: 9px; border-radius: 6px; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;">
+                        <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                    </a>
+                </div>
+
+            </div>
+<div>
+                <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #ecd8ba; padding-bottom: 6px; flex-wrap: wrap;">
+                    <button type="button" class="profile-tab-btn {% if not active_tab or active_tab == 'tab-info' %}active{% endif %}" onclick="switchProfileTab('tab-info', this)" style="{% if not active_tab or active_tab == 'tab-info' %}background: var(--primary-green, #23592d); color: #ffffff; border: none;{% else %}background: #ffffff; color: #1a4224; border: 1.5px solid #dfcfb7; border-bottom: none;{% endif %} padding: 10px 20px; border-radius: 6px 6px 0 0; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                        <i class="fa-solid fa-user-pen"></i> Thông Tin Cá Nhân
+                    </button>
+                    <button type="button" class="profile-tab-btn {% if active_tab == 'tab-password' %}active{% endif %}" onclick="switchProfileTab('tab-password', this)" style="{% if active_tab == 'tab-password' %}background: var(--primary-green, #23592d); color: #ffffff; border: none;{% else %}background: #ffffff; color: #1a4224; border: 1.5px solid #dfcfb7; border-bottom: none;{% endif %} padding: 10px 20px; border-radius: 6px 6px 0 0; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                        <i class="fa-solid fa-key"></i> Đổi Mật Khẩu
+                    </button>
+                    <button type="button" class="profile-tab-btn {% if active_tab == 'tab-orders' %}active{% endif %}" onclick="switchProfileTab('tab-orders', this)" style="{% if active_tab == 'tab-orders' %}background: var(--primary-green, #23592d); color: #ffffff; border: none;{% else %}background: #ffffff; color: #1a4224; border: 1.5px solid #dfcfb7; border-bottom: none;{% endif %} padding: 10px 20px; border-radius: 6px 6px 0 0; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                        <i class="fa-solid fa-receipt"></i> Lịch Sử Đơn Hàng ({{ orders|length }})
+                    </button>
+                </div>
+
+                <div id="tab-info" class="profile-tab-content" style="{% if active_tab and active_tab != 'tab-info' %}display: none;{% endif %}">
+                    <div style="background: #faf6ea; border: 2px solid #ecd8ba; border-radius: 12px; padding: 28px 26px; box-shadow: 0 6px 20px rgba(0,0,0,0.04);">
+                        
+                        <div style="border-bottom: 1px dashed #ebd9bf; padding-bottom: 14px; margin-bottom: 22px;">
+                            <h3 style="font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: var(--primary-green-dark, #2c4c3b); margin: 0 0 4px;">
+                                <i class="fa-solid fa-address-card" style="color: #cda434; margin-right: 8px;"></i> Cập Nhật Thông Tin Cá Nhân
+                            </h3>
+                            <p style="font-size: 13.5px; color: #2c4c3b; font-weight: 600; margin: 0;">
+                                Chỉnh sửa thông tin liên hệ, địa chỉ giao hàng và sở thích ẩm thực của bạn
+                            </p>
+                        </div>
+
+                        <form action="/profile" method="POST">
+                            <input type="hidden" name="action" value="update_profile">
+<div class="form-group" style="margin-bottom: 18px;">
+                                <label class="form-label" style="font-weight: 700; color: #111827; margin-bottom: 6px; display: block; font-size: 13.5px;">
+                                    Tên đăng nhập:
+                                </label>
+                                <div style="position: relative;">
+                                    <i class="fa-solid fa-user" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #777;"></i>
+                                    <input type="text" value="{{ current_user.username }}" disabled
+                                           style="padding-left: 40px; width: 100%; height: 44px; border: 1.5px solid #ccc; border-radius: 6px; background: #ececec; color: #111827; font-family: inherit; font-weight: 600; cursor: not-allowed;">
+                                </div>
+                                <span style="font-size: 12px; color: #374151; font-weight: 500; margin-top: 4px; display: block;">
+                                    <i class="fa-solid fa-lock"></i> Tên đăng nhập là định danh cố định không thể thay đổi.
+                                </span>
+                            </div>
+<div class="form-group" style="margin-bottom: 18px;">
+                                <label class="form-label" for="email" style="font-weight: 700; color: #111827; margin-bottom: 6px; display: block; font-size: 13.5px;">
+                                    Địa chỉ Email: <span style="color: #c92a2a;">*</span>
+                                </label>
+                                <div style="position: relative;">
+                                    <i class="fa-solid fa-envelope" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #777;"></i>
+                                    <input type="email" id="email" name="email" class="form-control" required value="{{ current_user.email }}"
+                                           placeholder="Nhập địa chỉ email hợp lệ"
+                                           style="padding-left: 40px; width: 100%; height: 44px; border: 1.5px solid #dfcfb7; border-radius: 6px; outline: none; background: #fff; font-family: inherit; color: #111827; font-size: 14px;">
+                                </div>
+                            </div>
+<div class="form-group" style="margin-bottom: 18px;">
+                                <label class="form-label" for="phone" style="font-weight: 700; color: #111827; margin-bottom: 6px; display: block; font-size: 13.5px;">
+                                    Số điện thoại:
+                                </label>
+                                <div style="position: relative;">
+                                    <i class="fa-solid fa-phone" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #777;"></i>
+                                    <input type="tel" id="phone" name="phone" class="form-control" value="{{ current_user.phone or '' }}"
+                                           placeholder="Nhập số điện thoại (9-11 chữ số)"
+                                           pattern="[0-9]{9,11}" maxlength="11"
+                                           oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                           style="padding-left: 40px; width: 100%; height: 44px; border: 1.5px solid #dfcfb7; border-radius: 6px; outline: none; background: #fff; font-family: inherit; color: #111827; font-size: 14px;">
+                                </div>
+                            </div>
+<div class="form-group" style="margin-bottom: 18px;">
+                                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+                                    <label class="form-label" for="address" style="font-weight: 700; color: #111827; display: block; font-size: 13.5px; margin: 0;">
+                                        Địa chỉ giao hàng: <span style="color: #23592d; font-weight: 700; font-size: 12px;">(Không bắt buộc)</span>
+                                    </label>
+                                    <span style="font-size: 12px; color: #374151; font-weight: 600;">Dùng khi giao nhận món ăn</span>
+                                </div>
+                                <div style="position: relative;">
+                                    <i class="fa-solid fa-location-dot" style="position: absolute; left: 14px; top: 14px; color: #cda434; font-size: 16px;"></i>
+                                    <textarea id="address" name="address" rows="2" class="form-control"
+                                              placeholder="Ví dụ: 123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM"
+                                              style="padding-left: 40px; padding-top: 10px; width: 100%; border: 1.5px solid #dfcfb7; border-radius: 6px; outline: none; background: #fff; font-family: inherit; resize: vertical; color: #111827; font-size: 14px;">{{ current_user.address or '' }}</textarea>
+                                </div>
+                                <span style="font-size: 12.5px; color: #23592d; font-weight: 600; margin-top: 4px; display: block;">
+                                    <i class="fa-solid fa-circle-info" style="color: #cda434;"></i> Khi lưu địa chỉ này, giỏ hàng sẽ tự động gợi ý khi bạn tiến hành thanh toán.
+                                </span>
+                            </div>
+<div class="form-group" style="margin-bottom: 24px;">
+                                <label class="form-label" for="taste_preferences" style="font-weight: 700; color: #111827; margin-bottom: 6px; display: block; font-size: 13.5px;">
+                                    Sở thích &amp; Khẩu vị ẩm thực: <span style="color: #4b5563; font-weight: 600; font-size: 12px;">(Không bắt buộc)</span>
+                                </label>
+                                <div style="position: relative;">
+                                    <i class="fa-solid fa-bowl-food" style="position: absolute; left: 14px; top: 14px; color: #777;"></i>
+                                    <textarea id="taste_preferences" name="taste_preferences" rows="2" class="form-control"
+                                              placeholder="Ví dụ: Thích đồ cay, món Ý nướng củi, thuần chay thanh đạm, ít ngọt, nhiều rau organic..."
+                                              style="padding-left: 40px; padding-top: 10px; width: 100%; border: 1.5px solid #dfcfb7; border-radius: 6px; outline: none; background: #fff; font-family: inherit; resize: vertical; color: #111827; font-size: 14px;">{{ current_user.taste_preferences or '' }}</textarea>
+                                </div>
+                                <span style="font-size: 12.5px; color: #374151; font-weight: 500; margin-top: 4px; display: block;">
+                                    Gợi ý thông minh các món ăn phù hợp với khẩu vị riêng của bạn.
+                                </span>
+                            </div>
+<button type="submit" class="btn-submit-form"
+                                    style="background: var(--primary-green, #23592d); color: #fff; border: none; padding: 12px 28px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; border-radius: 6px; cursor: pointer; transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-floppy-disk"></i> LƯU THAY ĐỔI
+                            </button>
+
+                        </form>
+
+                    </div>
+                </div>
+                <div id="tab-password" class="profile-tab-content" style="{% if active_tab != 'tab-password' %}display: none;{% endif %}">
+                    <div style="background: #faf6ea; border: 2px solid #ecd8ba; border-radius: 12px; padding: 28px 26px; box-shadow: 0 6px 20px rgba(0,0,0,0.04); max-width: 580px;">
+                        
+                        <div style="border-bottom: 1px dashed #ebd9bf; padding-bottom: 14px; margin-bottom: 22px;">
+                            <h3 style="font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: var(--primary-green-dark, #2c4c3b); margin: 0 0 4px;">
+                                <i class="fa-solid fa-shield-halved" style="color: #cda434; margin-right: 8px;"></i> Bảo Mật &amp; Đổi Mật Khẩu
+                            </h3>
+                            <p style="font-size: 13.5px; color: #2c4c3b; font-weight: 600; margin: 0;">
+                                Đảm bảo sử dụng mật khẩu mạnh tối thiểu 6 ký tự để bảo vệ tài khoản
+                            </p>
+                        </div>
+
+                        <form action="/profile" method="POST">
+                            <input type="hidden" name="action" value="change_password">
+                            <input type="hidden" name="email" value="{{ current_user.email }}">
+                            <input type="hidden" name="phone" value="{{ current_user.phone or '' }}">
+                            <input type="hidden" name="address" value="{{ current_user.address or '' }}">
+                            <input type="hidden" name="taste_preferences" value="{{ current_user.taste_preferences or '' }}">
+
+                            <div class="form-group" style="margin-bottom: 18px;">
+                                <label class="form-label" for="current_password" style="font-weight: 700; color: #111827; margin-bottom: 6px; display: block; font-size: 13.5px;">
+                                    Mật khẩu hiện tại: <span style="color: #c92a2a;">*</span>
+                                </label>
+                                <div style="position: relative;">
+                                    <i class="fa-solid fa-lock" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #777;"></i>
+                                    <input type="password" id="current_password" name="current_password" required class="form-control"
+                                           placeholder="Nhập mật khẩu đang dùng"
+                                           style="padding-left: 40px; width: 100%; height: 44px; border: 1.5px solid #dfcfb7; border-radius: 6px; outline: none; background: #fff; font-family: inherit; color: #111827; font-size: 14px;">
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 18px;">
+                                <label class="form-label" for="new_password" style="font-weight: 700; color: #111827; margin-bottom: 6px; display: block; font-size: 13.5px;">
+                                    Mật khẩu mới: <span style="color: #c92a2a;">*</span>
+                                </label>
+                                <div style="position: relative;">
+                                    <i class="fa-solid fa-key" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #777;"></i>
+                                    <input type="password" id="new_password" name="new_password" required minlength="6" class="form-control"
+                                           placeholder="Tối thiểu 6 ký tự"
+                                           style="padding-left: 40px; width: 100%; height: 44px; border: 1.5px solid #dfcfb7; border-radius: 6px; outline: none; background: #fff; font-family: inherit; color: #111827; font-size: 14px;">
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 24px;">
+                                <label class="form-label" for="confirm_password" style="font-weight: 700; color: #111827; margin-bottom: 6px; display: block; font-size: 13.5px;">
+                                    Xác nhận mật khẩu mới: <span style="color: #c92a2a;">*</span>
+                                </label>
+                                <div style="position: relative;">
+                                    <i class="fa-solid fa-shield-halved" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #777;"></i>
+                                    <input type="password" id="confirm_password" name="confirm_password" required minlength="6" class="form-control"
+                                           placeholder="Nhập lại mật khẩu mới"
+                                           style="padding-left: 40px; width: 100%; height: 44px; border: 1.5px solid #dfcfb7; border-radius: 6px; outline: none; background: #fff; font-family: inherit; color: #111827; font-size: 14px;">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-submit-form"
+                                    style="background: #cda434; color: #000; border: none; padding: 12px 28px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; border-radius: 6px; cursor: pointer; transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-arrows-rotate"></i> ĐỔI MẬT KHẨU
+                            </button>
+                        </form>
+
+                    </div>
+                </div>
+                <div id="tab-orders" class="profile-tab-content" style="{% if active_tab != 'tab-orders' %}display: none;{% endif %}">
+                    
+                    {% if orders and orders|length > 0 %}
+                        <div style="display: flex; flex-direction: column; gap: 16px;">
+                            {% for order in orders %}
+                                <div style="background: #ffffff; border: 2px solid #ecd8ba; border-radius: 12px; padding: 20px 24px; box-shadow: 0 4px 14px rgba(0,0,0,0.04);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #ebd9bf; padding-bottom: 12px; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                                        <div>
+                                            <span style="font-family: 'Playfair Display', Georgia, serif; font-weight: 700; font-size: 17px; color: var(--primary-green-dark, #2c4c3b);">
+                                                Đơn Hàng #{{ order.id }}
+                                            </span>
+                                            <span style="font-size: 13px; color: #1a4224; font-weight: 600; margin-left: 10px; background: #faf5eb; padding: 4px 12px; border-radius: 20px; border: 1px solid #ebd9bf;">
+                                                <i class="fa-regular fa-clock" style="color: #cda434;"></i> {{ order.created_at.strftime('%H:%M - %d/%m/%Y') if order.created_at else '' }}
+                                            </span>
+                                        </div>
+
+                                        <div>
+                                            {% if order.status.value == 'COMPLETED' %}
+                                                <span style="background: #d4edda; color: #155724; border: 1px solid #c3e6cb; padding: 5px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+                                                    <i class="fa-solid fa-circle-check"></i> Hoàn thành
+                                                </span>
+                                            {% elif order.status.value == 'PENDING' %}
+                                                <span style="background: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 5px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+                                                    <i class="fa-solid fa-hourglass-half"></i> Chờ duyệt
+                                                </span>
+                                            {% elif order.status.value == 'PREPARING' %}
+                                                <span style="background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; padding: 5px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+                                                    <i class="fa-solid fa-fire-burner"></i> Đang chuẩn bị
+                                                </span>
+                                            {% elif order.status.value == 'DELIVERING' %}
+                                                <span style="background: #cce5ff; color: #004085; border: 1px solid #b8daff; padding: 5px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+                                                    <i class="fa-solid fa-truck-fast"></i> Đang giao hàng
+                                                </span>
+                                            {% else %}
+                                                <span style="background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 5px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+                                                    <i class="fa-solid fa-ban"></i> {{ order.status.value }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div style="font-size: 14px; line-height: 1.7; color: #111827; margin-bottom: 12px;">
+                                        <div>
+                                            <i class="fa-solid fa-store" style="color: #cda434; width: 20px;"></i>
+                                            <strong style="color: #111827;">Nhà hàng:</strong> <span style="color: var(--primary-green-dark, #2c4c3b); font-weight: 600;">{{ order.restaurant.name if order.restaurant else 'Hệ thống Food Shoppe' }}</span>
+                                        </div>
+                                        <div>
+                                            <i class="fa-solid fa-location-dot" style="color: #cda434; width: 20px;"></i>
+                                            <strong style="color: #111827;">Địa chỉ giao:</strong> <span>{{ order.delivery_address }}</span>
+                                        </div>
+                                        {% if order.payment %}
+                                        <div>
+                                            <i class="fa-regular fa-credit-card" style="color: #cda434; width: 20px;"></i>
+                                            <strong style="color: #111827;">Hình thức:</strong> <span>{{ 'Thanh toán khi nhận hàng (COD)' if order.payment.method.value == 'CASH' else order.payment.method.value }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div style="background: #faf8f4; border: 1px solid #ebd9bf; border-radius: 8px; padding: 10px 16px; margin-bottom: 12px;">
+                                        {% for item in order.items %}
+                                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dotted #ebd9bf; font-size: 13.5px;">
+                                                <span><strong style="color: #111827;">{{ item.dish.name if item.dish else 'Món ngon' }}</strong> <span style="color: #1a4224; font-weight: 700; background: #f4ecd9; padding: 2px 8px; border-radius: 4px; margin-left: 6px;">× {{ item.quantity }}</span></span>
+                                                <span style="font-weight: 700; color: var(--primary-green-dark, #2c4c3b);">
+                                                    {{ "{:,.0f}".format(item.price_at_purchase * item.quantity) }} ₫
+                                                </span>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; font-size: 14.5px;">
+                                        <span style="font-weight: 700; color: #111827;">Tổng thanh toán:</span>
+                                        <span style="font-size: 19px; font-weight: 800; color: #c0392b; font-family: 'Plus Jakarta Sans', sans-serif;">
+                                            {{ "{:,.0f}".format(order.total_amount) }} ₫
+                                        </span>
+                                    </div>
+
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+<div style="background: #faf6ea; border: 2px dashed #ecd8ba; border-radius: 12px; padding: 50px 20px; text-align: center;">
+                            <div style="width: 80px; height: 80px; background: rgba(205, 164, 52, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: #cda434; font-size: 36px;">
+                                <i class="fa-solid fa-utensils"></i>
+                            </div>
+                            <h3 style="font-family: 'Playfair Display', Georgia, serif; font-size: 20px; color: var(--primary-green-dark, #2c4c3b); margin: 0 0 8px;">
+                                Bạn chưa có đơn hàng nào
+                            </h3>
+                            <p style="color: #777; font-size: 13.5px; max-width: 420px; margin: 0 auto 20px;">
+                                Hãy khám phá ngay các món ăn thơm ngon, tươi mới tại các nhà hàng đối tác của Food Shoppe!
+                            </p>
+                            <a href="/#restaurants" style="display: inline-flex; align-items: center; gap: 8px; background: var(--primary-green, #23592d); color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; letter-spacing: 0.5px; transition: background 0.2s;">
+                                <i class="fa-solid fa-magnifying-glass"></i> KHÁM PHÁ NHÀ HÀNG NGAY
+                            </a>
+                        </div>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+<footer class="site-footer">
+        <p>© 2026 Food Shoppe • Deli • Market • Catering. All rights reserved.</p>
+        <p style="margin-top: 4px; font-size: 12px; opacity: 0.85;">Dịch vụ ẩm thực thủ công tươi ngon &amp; nguyên liệu hảo hạng mỗi ngày.</p>
+    </footer>
+</div>
+<script>
+function switchProfileTab(tabId, btn) {
+    document.querySelectorAll('.profile-tab-content').forEach(function(content) {
+        content.style.display = 'none';
+    });
+
+    document.querySelectorAll('.profile-tab-btn').forEach(function(b) {
+        b.classList.remove('active');
+        b.style.background = '#ffffff';
+        b.style.color = '#1a4224';
+        b.style.border = '1.5px solid #dfcfb7';
+        b.style.borderBottom = 'none';
+    });
+
+    const target = document.getElementById(tabId);
+    if (target) {
+        target.style.display = 'block';
+    }
+
+    if (btn) {
+        btn.classList.add('active');
+        btn.style.background = 'var(--primary-green, #23592d)';
+        btn.style.color = '#ffffff';
+        btn.style.border = 'none';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const hash = window.location.hash ? window.location.hash.substring(1) : null;
+    if (hash) {
+        const btn = document.querySelector('.profile-tab-btn[onclick*="' + hash + '"]');
+        if (btn) {
+            switchProfileTab(hash, btn);
+        }
+    }
+});
+</script>
+
+<style>
+@media (max-width: 768px) {
+    .profile-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
+
+<script src="{{ url_for('static', filename='js/nav.js') }}"></script>
+</body>
+</html>
