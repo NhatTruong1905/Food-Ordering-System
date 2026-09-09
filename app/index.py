@@ -1,10 +1,16 @@
+import os
+import hmac
+import hashlib
+import urllib.parse
+from datetime import datetime
+from decimal import Decimal
 from flask import render_template, request, jsonify, session, redirect, flash
 from app import app, dao, login, db
 from flask_login import login_user, logout_user, current_user, login_required
 from app.utils import get_cart_stats, get_res_total
 from app.models import Order, OrderItem, Payment, OrderStatusEnum, PaymentMethodEnum, PaymentStatusEnum, RoleEnum, \
     Restaurant
-from decimal import Decimal
+from app.vnpay import build_vnpay_payment_url, verify_vnpay_response, get_vnpay_response_message
 
 
 @app.context_processor
@@ -479,8 +485,27 @@ def checkout_restaurant(restaurant_id):
         db.session.commit()
 
         res_stats = get_cart_stats(cart)
+
+        if payment_method == PaymentMethodEnum.VNPAY:
+            return_url = request.host_url.rstrip('/') + '/vnpay_return'
+            client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+            if client_ip and ',' in client_ip:
+                client_ip = client_ip.split(',')[0].strip()
+            payment_url = build_vnpay_payment_url(new_order, client_ip, return_url)
+            return jsonify({
+                "status": "success",
+                "payment_method": "VNPAY",
+                "payment_url": payment_url,
+                "order_id": new_order.id,
+                "total_amount": float(new_order.total_amount),
+                "message": "Đặt hàng thành công! Vui lòng hoàn tất thanh toán.",
+                "grand_total_quantity": res_stats['total_quantity'],
+                "grand_total_amount": res_stats['total_amount']
+            }), 200
+
         return jsonify({
             "status": "success",
+            "payment_method": "CASH",
             "message": f"Đặt hàng thành công! Mã đơn hàng: #{new_order.id}",
             "order_id": new_order.id,
             "grand_total_quantity": res_stats['total_quantity'],
@@ -533,3 +558,230 @@ def update_order_status(order_id):
             {"status": "success", "message": f"Đã cập nhật trạng thái đơn #{order.id} thành {new_status.value}"}), 200
     except KeyError:
         return jsonify({"error": "Trạng thái không hợp lệ"}), 400
+
+
+@app.route('/vnpay_return')
+def vnpay_return():
+    query_params = request.args.to_dict()
+    is_valid = verify_vnpay_response(query_params)
+
+    txn_ref = query_params.get('vnp_TxnRef', '')
+    response_code = query_params.get('vnp_ResponseCode', '')
+    transaction_no = query_params.get('vnp_TransactionNo', '')
+    bank_code = query_params.get('vnp_BankCode', '')
+    amount_str = query_params.get('vnp_Amount', '0')
+    pay_date_str = query_params.get('vnp_PayDate', '')
+    order_info = query_params.get('vnp_OrderInfo', '')
+
+    order_id = None
+    if txn_ref:
+        try:
+            order_id = int(txn_ref.split('_')[0])
+        except (ValueError, IndexError):
+            order_id = None
+
+    order = Order.query.get(order_id) if order_id else None
+    payment = order.payment if order else None
+
+    try:
+        amount = float(amount_str) / 100 if amount_str else 0
+    except ValueError:
+        amount = 0
+
+    pay_date = None
+    if pay_date_str and len(pay_date_str) == 14:
+        try:
+            pay_date = datetime.strptime(pay_date_str, '%Y%m%d%H%M%S')
+        except ValueError:
+            pay_date = None
+
+    is_success = False
+    message = get_vnpay_response_message(response_code)
+
+    if is_valid:
+        if response_code == '00':
+            is_success = True
+            if payment:
+                payment.status = PaymentStatusEnum.SUCCESS
+                try:
+                    payment.transaction_id = transaction_no
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+                    payment.transaction_id = f"{transaction_no}_{order.id if order else '0'}_{int(datetime.now().timestamp())}"
+                    db.session.commit()
+        else:
+            if payment and payment.status != PaymentStatusEnum.SUCCESS:
+                payment.status = PaymentStatusEnum.FAILED
+                try:
+                    payment.transaction_id = transaction_no
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+                    payment.transaction_id = f"{transaction_no}_{order.id if order else '0'}_{int(datetime.now().timestamp())}"
+                    db.session.commit()
+    else:
+        message = "Chữ ký bảo mật không hợp lệ (Dữ liệu giao dịch có thể đã bị can thiệp)."
+
+    return render_template(
+        'vnpay_result.html',
+        is_success=is_success,
+        is_valid=is_valid,
+        order=order,
+        order_id=order_id,
+        payment=payment,
+        transaction_no=transaction_no,
+        bank_code=bank_code,
+        amount=amount,
+        pay_date=pay_date,
+        order_info=order_info,
+        message=message,
+        response_code=response_code
+    )
+
+
+@app.route('/api/orders/<int:order_id>/pay_vnpay', methods=['POST'])
+@login_required
+def retry_vnpay_payment(order_id):
+    order = Order.query.get(order_id)
+    if not order:
+        return jsonify({"error": "Không tìm thấy đơn hàng!"}), 404
+    if order.user_id != current_user.id and current_user.role != RoleEnum.ADMIN:
+        return jsonify({"error": "Bạn không có quyền thanh toán đơn hàng này!"}), 403
+    if order.status == OrderStatusEnum.CANCELLED:
+        return jsonify({"error": "Đơn hàng này đã bị hủy, không thể thanh toán!"}), 400
+    if order.payment and order.payment.status == PaymentStatusEnum.SUCCESS:
+        return jsonify({"error": "Đơn hàng này đã được thanh toán thành công trước đó!"}), 400
+
+    if not order.payment:
+        new_payment = Payment(
+            order_id=order.id,
+            amount=order.total_amount,
+            method=PaymentMethodEnum.VNPAY,
+            status=PaymentStatusEnum.PENDING
+        )
+        db.session.add(new_payment)
+        db.session.commit()
+    else:
+        order.payment.method = PaymentMethodEnum.VNPAY
+        order.payment.status = PaymentStatusEnum.PENDING
+        db.session.commit()
+
+    return_url = request.host_url.rstrip('/') + '/vnpay_return'
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if client_ip and ',' in client_ip:
+        client_ip = client_ip.split(',')[0].strip()
+    payment_url = build_vnpay_payment_url(order, client_ip, return_url)
+
+    return jsonify({
+        "status": "success",
+        "order_id": order.id,
+        "total_amount": float(order.total_amount),
+        "payment_url": payment_url,
+        "message": "Đã tạo liên kết thanh toán VNPAY!"
+    }), 200
+
+
+@app.route('/api/orders/<int:order_id>/confirm_payment', methods=['POST'])
+@login_required
+def confirm_order_payment(order_id):
+    order = Order.query.get(order_id)
+    if not order:
+        return jsonify({"error": "Không tìm thấy đơn hàng!"}), 404
+    if order.user_id != current_user.id and current_user.role != RoleEnum.ADMIN:
+        return jsonify({"error": "Bạn không có quyền thực hiện thao tác này!"}), 403
+    if order.status == OrderStatusEnum.CANCELLED:
+        return jsonify({"error": "Đơn hàng này đã bị hủy!"}), 400
+
+    if order.payment:
+        order.payment.status = PaymentStatusEnum.SUCCESS
+        if not order.payment.transaction_id:
+            order.payment.transaction_id = f"TRANSFER_{order.id}_{int(datetime.now().timestamp())}"
+    else:
+        new_payment = Payment(
+            order_id=order.id,
+            amount=order.total_amount,
+            method=PaymentMethodEnum.VNPAY,
+            status=PaymentStatusEnum.SUCCESS,
+            transaction_id=f"TRANSFER_{order.id}_{int(datetime.now().timestamp())}"
+        )
+        db.session.add(new_payment)
+    db.session.commit()
+
+    return jsonify({
+        "status": "success",
+        "message": f"Đã xác nhận thanh toán thành công cho đơn hàng #{order.id}!"
+    }), 200
+
+
+@app.route('/api/orders/<int:order_id>/pay_vnpay_test', methods=['POST'])
+@login_required
+def pay_vnpay_test(order_id):
+    order = Order.query.get(order_id)
+    if not order:
+        return jsonify({"error": "Không tìm thấy đơn hàng!"}), 404
+    if order.user_id != current_user.id and current_user.role != RoleEnum.ADMIN:
+        return jsonify({"error": "Bạn không có quyền thanh toán đơn hàng này!"}), 403
+    if order.status == OrderStatusEnum.CANCELLED:
+        return jsonify({"error": "Đơn hàng này đã bị hủy, không thể thanh toán!"}), 400
+
+    req_data = request.get_json(silent=True) or {}
+    card_number = req_data.get('card_number', '').replace(' ', '').strip()
+    card_holder = req_data.get('card_holder', '').strip().upper()
+    issue_date = req_data.get('issue_date', '').strip()
+    otp = req_data.get('otp', '').strip()
+
+    if card_number and card_number != '9704198526191432198':
+        return jsonify({"error": "Số thẻ không đúng! Thẻ thử nghiệm NCB là: 9704198526191432198"}), 400
+    if card_holder and card_holder != 'NGUYEN VAN A':
+        return jsonify({"error": "Tên chủ thẻ không đúng! Chủ thẻ thử nghiệm là: NGUYEN VAN A"}), 400
+    if issue_date and issue_date != '07/15':
+        return jsonify({"error": "Ngày phát hành không đúng! Ngày phát hành thử nghiệm là: 07/15"}), 400
+    if otp and otp != '123456':
+        return jsonify({"error": "Mã OTP không chính xác! Mã OTP thử nghiệm là: 123456"}), 400
+
+    now = datetime.now()
+    now_str = now.strftime('%Y%m%d%H%M%S')
+    txn_no = f"1455{int(now.timestamp()) % 100000}"
+
+    if not order.payment:
+        new_payment = Payment(
+            order_id=order.id,
+            amount=order.total_amount,
+            method=PaymentMethodEnum.VNPAY,
+            status=PaymentStatusEnum.SUCCESS,
+            transaction_id=txn_no
+        )
+        db.session.add(new_payment)
+    else:
+        order.payment.method = PaymentMethodEnum.VNPAY
+        order.payment.status = PaymentStatusEnum.SUCCESS
+        order.payment.transaction_id = txn_no
+    db.session.commit()
+
+    query_params = {
+        'vnp_Amount': str(int(float(order.total_amount) * 100)),
+        'vnp_BankCode': 'NCB',
+        'vnp_BankTranNo': f'VNP{txn_no}',
+        'vnp_CardType': 'ATM',
+        'vnp_OrderInfo': f'Thanh toan don hang {order.id} tai Food Shoppe',
+        'vnp_PayDate': now_str,
+        'vnp_ResponseCode': '00',
+        'vnp_TmnCode': os.getenv('VNPAY_TMN_CODE', '1SI5X77N'),
+        'vnp_TransactionNo': txn_no,
+        'vnp_TransactionStatus': '00',
+        'vnp_TxnRef': f'{order.id}_{int(now.timestamp())}'
+    }
+
+    sorted_p = sorted(query_params.items())
+    hash_data = '&'.join(f'{urllib.parse.quote_plus(k)}={urllib.parse.quote_plus(str(v))}' for k, v in sorted_p)
+    hash_secret = os.getenv('VNPAY_HASH_SECRET') or os.getenv('vnp_HashSecret') or 'QPYBOSLUIPUJDYHYIVHZBMRKXEAGWYJD'
+    secure_hash = hmac.new(hash_secret.encode('utf-8'), hash_data.encode('utf-8'), hashlib.sha512).hexdigest()
+
+    redirect_url = f'/vnpay_return?{hash_data}&vnp_SecureHash={secure_hash}'
+
+    return jsonify({
+        "status": "success",
+        "message": "Thanh toán bằng thẻ test VNPAY (NGUYEN VAN A) thành công!",
+        "redirect_url": redirect_url
+    }), 200
