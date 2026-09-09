@@ -1,11 +1,14 @@
 import os
 import hmac
 import hashlib
+import json
+import threading
 import urllib.parse
+from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
 from flask import render_template, request, jsonify, session, redirect, flash
-from app import app, dao, login, db
+from app import app, dao, login, db, sock
 from flask_login import login_user, logout_user, current_user, login_required
 from app.utils import get_cart_stats, get_res_total
 from app.models import Order, OrderItem, Payment, OrderStatusEnum, PaymentMethodEnum, PaymentStatusEnum, RoleEnum, \
@@ -838,76 +841,70 @@ def get_active_chat_order():
     })
 
 
-@app.route('/api/chat/<int:order_id>/messages', methods=['GET'])
-@login_required
-def get_order_chat_messages(order_id):
+chat_rooms_lock = threading.Lock()
+active_chat_rooms = defaultdict(set)
+
+
+@sock.route('/ws/chat/<int:order_id>')
+def chat_socket(ws, order_id):
+    if not current_user.is_authenticated:
+        ws.close()
+        return
+
     order = Order.query.get(order_id)
     if not order:
-        return jsonify({"error": "Không tìm thấy đơn hàng!"}), 404
+        ws.close()
+        return
 
     is_customer = (order.user_id == current_user.id)
     is_owner = (order.restaurant.owner_id == current_user.id)
     is_admin = (current_user.role == RoleEnum.ADMIN)
 
     if not (is_customer or is_owner or is_admin):
-        return jsonify({"error": "Bạn không có quyền xem cuộc trò chuyện này!"}), 403
+        ws.close()
+        return
 
-    after_id = request.args.get('after_id', type=int)
-    messages = dao.get_chat_messages(order_id, after_id=after_id)
-    dao.mark_chat_messages_read(order_id, current_user.id)
+    with chat_rooms_lock:
+        active_chat_rooms[order_id].add(ws)
 
-    msg_list = []
-    for m in messages:
-        msg_list.append({
-            "id": m.id,
-            "sender_id": m.sender_id,
-            "sender_name": m.sender.username,
-            "is_me": (m.sender_id == current_user.id),
-            "is_restaurant": (m.sender_id == order.restaurant.owner_id),
-            "message": m.message,
-            "created_at": m.created_at.strftime('%H:%M')
-        })
+    try:
+        while True:
+            raw_data = ws.receive()
+            if raw_data is None:
+                break
 
-    return jsonify({
-        "status": "success",
-        "order_id": order.id,
-        "restaurant_name": order.restaurant.name,
-        "restaurant_image": order.restaurant.image_url or '/static/images/storefront.jpg',
-        "customer_name": order.customer.username,
-        "messages": msg_list
-    })
+            try:
+                payload = json.loads(raw_data)
+            except Exception:
+                continue
 
+            text = (payload.get('message') or '').strip()
+            if not text:
+                continue
 
-@app.route('/api/chat/<int:order_id>/send', methods=['POST'])
-@login_required
-def send_order_chat_message(order_id):
-    order = Order.query.get(order_id)
-    if not order:
-        return jsonify({"error": "Không tìm thấy đơn hàng!"}), 404
+            msg_payload = {
+                "id": int(datetime.now().timestamp() * 1000),
+                "order_id": order_id,
+                "sender_id": current_user.id,
+                "sender_name": current_user.username,
+                "is_restaurant": (current_user.id == order.restaurant.owner_id),
+                "message": text,
+                "created_at": datetime.now().strftime('%H:%M')
+            }
 
-    is_customer = (order.user_id == current_user.id)
-    is_owner = (order.restaurant.owner_id == current_user.id)
-    is_admin = (current_user.role == RoleEnum.ADMIN)
+            serialized = json.dumps(msg_payload)
 
-    if not (is_customer or is_owner or is_admin):
-        return jsonify({"error": "Bạn không có quyền gửi tin nhắn trong đơn này!"}), 403
+            with chat_rooms_lock:
+                recipients = list(active_chat_rooms[order_id])
 
-    data = request.get_json(silent=True) or {}
-    text = (data.get('message') or '').strip()
-    if not text:
-        return jsonify({"error": "Nội dung tin nhắn không được để trống!"}), 400
-
-    new_msg = dao.add_chat_message(order_id, current_user.id, text)
-
-    return jsonify({
-        "status": "success",
-        "message": {
-            "id": new_msg.id,
-            "sender_id": new_msg.sender_id,
-            "sender_name": current_user.username,
-            "is_me": True,
-            "is_restaurant": (new_msg.sender_id == order.restaurant.owner_id),
-            "message": new_msg.message,
-            "created_at": new_msg.created_at.strftime('%H:%M')
-        }
-    })
+            for client_ws in recipients:
+                try:
+                    client_ws.send(serialized)
+                except Exception:
+                    with chat_rooms_lock:
+                        active_chat_rooms[order_id].discard(client_ws)
+    finally:
+        with chat_rooms_lock:
+            active_chat_rooms[order_id].discard(ws)
+            if not active_chat_rooms[order_id]:
+                active_chat_rooms.pop(order_id, None)

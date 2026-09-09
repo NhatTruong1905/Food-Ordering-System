@@ -1,7 +1,7 @@
 import bcrypt
 from sqlalchemy import or_
 from app import db
-from app.models import Restaurant, Dish, User, RoleEnum, Order, OrderStatusEnum, PaymentStatusEnum, ChatMessage, Payment
+from app.models import Restaurant, Dish, User, RoleEnum, Order, OrderStatusEnum, PaymentStatusEnum, Payment
 
 
 def hash_password(password: str) -> str:
@@ -182,32 +182,4 @@ def get_active_order_for_user(user_id):
     ).order_by(Order.id.desc()).first()
 
 
-def get_chat_messages(order_id, after_id=None):
-    query = ChatMessage.query.filter(ChatMessage.order_id == order_id)
-    if after_id:
-        query = query.filter(ChatMessage.id > after_id)
-    return query.order_by(ChatMessage.id.asc()).all()
-
-
-def add_chat_message(order_id, sender_id, message_text):
-    msg = ChatMessage(
-        order_id=order_id,
-        sender_id=sender_id,
-        message=message_text.strip()
-    )
-    db.session.add(msg)
-    db.session.commit()
-    return msg
-
-
-def mark_chat_messages_read(order_id, reader_id):
-    unread = ChatMessage.query.filter(
-        ChatMessage.order_id == order_id,
-        ChatMessage.sender_id != reader_id,
-        ChatMessage.is_read.is_(False)
-    ).all()
-    for m in unread:
-        m.is_read = True
-    if unread:
-        db.session.commit()
 

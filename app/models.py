@@ -169,20 +169,7 @@ class Review(BaseModel):
     )
 
 
-class ChatMessage(BaseModel):
-    __tablename__ = 'chat_messages'
-
-    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False, index=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
-    message = db.Column(db.Text, nullable=False)
-    is_read = db.Column(db.Boolean, default=False, nullable=False)
-
-    order = db.relationship('Order', backref=db.backref('chat_messages', lazy='dynamic', cascade='all, delete-orphan'))
-    sender = db.relationship('User')
-
-
 def seed_data():
-    ChatMessage.query.delete()
     Review.query.delete()
     Payment.query.delete()
     OrderItem.query.delete()
@@ -195,7 +182,7 @@ def seed_data():
     User.query.delete()
     db.session.commit()
 
-    tables = ['chat_messages', 'reviews', 'payments', 'order_items', 'orders', 'cart_items', 'carts', 'dishes', 'categories', 'restaurants', 'users']
+    tables = ['reviews', 'payments', 'order_items', 'orders', 'cart_items', 'carts', 'dishes', 'categories', 'restaurants', 'users']
     for t in tables:
         try:
             db.session.execute(text(f'ALTER TABLE {t} AUTO_INCREMENT = 1;'))
