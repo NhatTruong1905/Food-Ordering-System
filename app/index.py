@@ -1,15 +1,18 @@
 import os
 import hmac
 import hashlib
+import json
+import threading
 import urllib.parse
+from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
 from flask import render_template, request, jsonify, session, redirect, flash
-from app import app, dao, login, db
+from app import app, dao, login, db, sock
 from flask_login import login_user, logout_user, current_user, login_required
 from app.utils import get_cart_stats, get_res_total
 from app.models import Order, OrderItem, Payment, OrderStatusEnum, PaymentMethodEnum, PaymentStatusEnum, RoleEnum, \
-    Restaurant
+    Restaurant, Dish
 from app.vnpay import build_vnpay_payment_url, verify_vnpay_response, get_vnpay_response_message
 
 
@@ -319,6 +322,16 @@ def restaurant_dishes(restaurant_id):
 @app.route('/cart')
 def cart_view():
     cart = session.get('cart', {})
+    if cart:
+        changed = False
+        valid_res_ids = {r.id for r in Restaurant.query.filter(Restaurant.id.in_([int(k) for k in cart.keys() if k.isdigit()])).all()}
+        for k in list(cart.keys()):
+            if not k.isdigit() or int(k) not in valid_res_ids:
+                del cart[k]
+                changed = True
+        if changed:
+            session['cart'] = cart
+            session.modified = True
     cart_stats = get_cart_stats(cart)
     return render_template('cart.html', cart_stats=cart_stats)
 
@@ -436,6 +449,14 @@ def checkout_restaurant(restaurant_id):
         if res_id_str not in cart or not cart[res_id_str].get('items'):
             return jsonify({"error": "Nhà hàng này không có món nào trong giỏ!"}), 400
 
+        restaurant = Restaurant.query.get(restaurant_id)
+        if not restaurant:
+            if res_id_str in cart:
+                del cart[res_id_str]
+                session['cart'] = cart
+                session.modified = True
+            return jsonify({"error": "Nhà hàng này không còn tồn tại hoặc dữ liệu vừa được làm mới. Vui lòng chọn món lại!"}), 400
+
         data = request.get_json() or {}
         delivery_address = data.get('delivery_address', "")
 
@@ -449,6 +470,14 @@ def checkout_restaurant(restaurant_id):
             payment_method = PaymentMethodEnum.CASH
 
         items_data = cart[res_id_str]['items']
+        for dish_id, item in items_data.items():
+            if not Dish.query.get(int(dish_id)):
+                if res_id_str in cart:
+                    del cart[res_id_str]
+                    session['cart'] = cart
+                    session.modified = True
+                return jsonify({"error": f"Món '{item.get('name', '')}' không còn tồn tại trong hệ thống. Vui lòng chọn lại món!"}), 400
+
         total_amount = sum(item['quantity'] * item['price'] for item in items_data.values())
 
         new_order = Order(
@@ -497,6 +526,8 @@ def checkout_restaurant(restaurant_id):
                 "payment_method": "VNPAY",
                 "payment_url": payment_url,
                 "order_id": new_order.id,
+                "restaurant_name": new_order.restaurant.name if new_order.restaurant else "Nhà hàng",
+                "restaurant_image": (new_order.restaurant.image_url if new_order.restaurant and new_order.restaurant.image_url else '/static/images/storefront.jpg'),
                 "total_amount": float(new_order.total_amount),
                 "message": "Đặt hàng thành công! Vui lòng hoàn tất thanh toán.",
                 "grand_total_quantity": res_stats['total_quantity'],
@@ -508,6 +539,8 @@ def checkout_restaurant(restaurant_id):
             "payment_method": "CASH",
             "message": f"Đặt hàng thành công! Mã đơn hàng: #{new_order.id}",
             "order_id": new_order.id,
+            "restaurant_name": new_order.restaurant.name if new_order.restaurant else "Nhà hàng",
+            "restaurant_image": (new_order.restaurant.image_url if new_order.restaurant and new_order.restaurant.image_url else '/static/images/storefront.jpg'),
             "grand_total_quantity": res_stats['total_quantity'],
             "grand_total_amount": res_stats['total_amount']
         }), 200
@@ -785,3 +818,93 @@ def pay_vnpay_test(order_id):
         "message": "Thanh toán bằng thẻ test VNPAY (NGUYEN VAN A) thành công!",
         "redirect_url": redirect_url
     }), 200
+
+
+@app.route('/api/chat/active_order', methods=['GET'])
+def get_active_chat_order():
+    if not current_user.is_authenticated:
+        return jsonify({"active": False})
+
+    order = dao.get_active_order_for_user(current_user.id)
+    if not order:
+        return jsonify({"active": False})
+
+    restaurant = order.restaurant
+    return jsonify({
+        "active": True,
+        "order_id": order.id,
+        "restaurant_id": restaurant.id,
+        "restaurant_name": restaurant.name,
+        "restaurant_image": restaurant.image_url or '/static/images/storefront.jpg',
+        "order_status": order.status.value,
+        "created_at": order.created_at.strftime('%H:%M | %d/%m/%Y')
+    })
+
+
+chat_rooms_lock = threading.Lock()
+active_chat_rooms = defaultdict(set)
+
+
+@sock.route('/ws/chat/<int:order_id>')
+def chat_socket(ws, order_id):
+    if not current_user.is_authenticated:
+        ws.close()
+        return
+
+    order = Order.query.get(order_id)
+    if not order:
+        ws.close()
+        return
+
+    is_customer = (order.user_id == current_user.id)
+    is_owner = (order.restaurant.owner_id == current_user.id)
+    is_admin = (current_user.role == RoleEnum.ADMIN)
+
+    if not (is_customer or is_owner or is_admin):
+        ws.close()
+        return
+
+    with chat_rooms_lock:
+        active_chat_rooms[order_id].add(ws)
+
+    try:
+        while True:
+            raw_data = ws.receive()
+            if raw_data is None:
+                break
+
+            try:
+                payload = json.loads(raw_data)
+            except Exception:
+                continue
+
+            text = (payload.get('message') or '').strip()
+            if not text:
+                continue
+
+            msg_payload = {
+                "id": int(datetime.now().timestamp() * 1000),
+                "order_id": order_id,
+                "sender_id": current_user.id,
+                "sender_name": current_user.username,
+                "is_restaurant": (current_user.id == order.restaurant.owner_id),
+                "message": text,
+                "created_at": datetime.now().strftime('%H:%M')
+            }
+
+            serialized = json.dumps(msg_payload)
+
+            with chat_rooms_lock:
+                recipients = list(active_chat_rooms[order_id])
+
+            for client_ws in recipients:
+                try:
+                    client_ws.send(serialized)
+                except Exception:
+                    with chat_rooms_lock:
+                        active_chat_rooms[order_id].discard(client_ws)
+    finally:
+        with chat_rooms_lock:
+            active_chat_rooms[order_id].discard(ws)
+            if not active_chat_rooms[order_id]:
+                active_chat_rooms.pop(order_id, None)

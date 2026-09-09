@@ -310,6 +310,12 @@
                                     </button>
                                 {% endif %}
 
+                                {% if order.status.value != 'CANCELLED' %}
+                                    <button type="button" class="btn-chat-restaurant" onclick="openChatWithOrder({{ order.id }}, '{{ (order.restaurant.name if order.restaurant else 'Nhà hàng')|replace('\'', '\\\'') }}', '{{ order.restaurant.image_url if order.restaurant and order.restaurant.image_url else '' }}')" style="background: #1a4224; color: #ffffff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                                        <i class="fa-solid fa-comments"></i> Chat với chủ nhà hàng
+                                    </button>
+                                {% endif %}
+
                                 <a href="/#restaurants" class="btn-reorder-link">
                                     <i class="fa-solid fa-utensils"></i> Khám phá thêm món
                                 </a>
@@ -793,6 +799,7 @@ document.addEventListener('keydown', function (e) {
 });
 </script>
 
+{% include 'chat_widget.html' %}
 <script src="{{ url_for('static', filename='js/nav.js') }}"></script>
 </body>
 </html>

@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from flask_login import UserMixin
 import bcrypt
+from sqlalchemy import text
 from app import db
 
 
@@ -179,6 +180,14 @@ def seed_data():
     Category.query.delete()
     Restaurant.query.delete()
     User.query.delete()
+    db.session.commit()
+
+    tables = ['reviews', 'payments', 'order_items', 'orders', 'cart_items', 'carts', 'dishes', 'categories', 'restaurants', 'users']
+    for t in tables:
+        try:
+            db.session.execute(text(f'ALTER TABLE {t} AUTO_INCREMENT = 1;'))
+        except Exception:
+            pass
     db.session.commit()
 
     default_password = bcrypt.hashpw(b"123456", bcrypt.gensalt()).decode('utf-8')

@@ -446,6 +446,8 @@
     </div>
 </div>
 
+{% include 'chat_widget.html' %}
+
 <script>
     window.DEFAULT_USER_ADDRESS = "{{ (current_user.address or '')|replace('\"', '\\\"') if current_user and current_user.is_authenticated else '' }}";
 </script>

@@ -1,7 +1,7 @@
 import bcrypt
 from sqlalchemy import or_
 from app import db
-from app.models import Restaurant, Dish, User, RoleEnum, Order, OrderStatusEnum, PaymentStatusEnum
+from app.models import Restaurant, Dish, User, RoleEnum, Order, OrderStatusEnum, PaymentStatusEnum, Payment
 
 
 def hash_password(password: str) -> str:
@@ -166,3 +166,20 @@ def get_dishes_by_restaurant(restaurant_id):
         Dish.restaurant_id == restaurant_id,
         Dish.is_active.is_(True)
     ).all()
+
+
+def get_active_order_for_user(user_id):
+    active_statuses = [
+        OrderStatusEnum.PENDING,
+        OrderStatusEnum.CONFIRMED,
+        OrderStatusEnum.PREPARING,
+        OrderStatusEnum.DELIVERING
+    ]
+    return Order.query.join(Payment).filter(
+        Order.user_id == user_id,
+        Order.status.in_(active_statuses),
+        Payment.status == PaymentStatusEnum.SUCCESS
+    ).order_by(Order.id.desc()).first()
+
+
+

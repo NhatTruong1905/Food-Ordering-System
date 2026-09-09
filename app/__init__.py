@@ -29,3 +29,7 @@ login.login_view = 'login_view'
 login.login_message = 'Vui lòng đăng nhập để tiếp tục.'
 login.login_message_category = 'warning'
 
+from flask_sock import Sock
+
+sock = Sock(app=app)
+
