@@ -1,7 +1,7 @@
 import bcrypt
 from sqlalchemy import or_
 from app import db
-from app.models import Restaurant, Dish, User, RoleEnum, Order, OrderStatusEnum
+from app.models import Restaurant, Dish, User, RoleEnum, Order, OrderStatusEnum, PaymentStatusEnum
 
 
 def hash_password(password: str) -> str:
@@ -111,6 +111,8 @@ def cancel_order(order_id, user_id):
         return False, "Không tìm thấy đơn hàng!"
     if order.status != OrderStatusEnum.PENDING:
         return False, "Chỉ có thể hủy đơn hàng khi đơn đang ở trạng thái Chờ xác nhận!"
+    if order.payment and order.payment.status == PaymentStatusEnum.SUCCESS:
+        return False, "Đơn hàng đã được thanh toán, không thể hủy!"
     order.status = OrderStatusEnum.CANCELLED
     db.session.commit()
     return True, "Hủy đơn hàng thành công!"

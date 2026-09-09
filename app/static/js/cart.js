@@ -205,15 +205,21 @@ function submitCheckoutModal() {
 
         closeCheckoutModal();
 
-        if (paymentMethod === 'VNPAY') {
-            alert(`[VNPAY] Đặt hàng thành công! Mã đơn hàng: #${data.order_id}\nPhương thức thanh toán: Cổng VNPAY`);
-        } else {
-            alert(data.message || `Đặt hàng thành công! Mã đơn hàng: #${data.order_id}`);
-        }
-
         const resId = currentCheckoutRestaurantId;
         const resCard = document.getElementById(`cart-res-${resId}`);
         if (resCard) resCard.remove();
+
+        if (data.payment_method === 'VNPAY' && data.payment_url) {
+            if (data.grand_total_quantity > 0) {
+                const amtEl = document.querySelector('.cart-amount');
+                if (amtEl) amtEl.innerText = data.grand_total_amount.toLocaleString('vi-VN');
+                document.querySelectorAll('.cart-counter').forEach(c => c.innerText = data.grand_total_quantity);
+            }
+            openVNPayModal(data.order_id, data.total_amount, data.payment_url);
+            return;
+        }
+
+        alert(data.message || `Đặt hàng thành công! Mã đơn hàng: #${data.order_id}`);
 
         if (data.grand_total_quantity === 0) {
             location.reload();
@@ -235,15 +241,244 @@ function submitCheckoutModal() {
     });
 }
 
+let currentVNPayOrderId = null;
+
+function switchVNPayTab(tabName) {
+    const tabTestCard = document.getElementById('vnpayTabTestCard');
+    const tabQr = document.getElementById('vnpayTabQr');
+    const btnTestCard = document.getElementById('tabBtnTestCard');
+    const btnQr = document.getElementById('tabBtnQr');
+
+    if (!tabTestCard || !tabQr || !btnTestCard || !btnQr) return;
+
+    if (tabName === 'testcard') {
+        tabTestCard.style.display = 'block';
+        tabQr.style.display = 'none';
+        btnTestCard.style.background = '#005cb4';
+        btnTestCard.style.color = '#fff';
+        btnTestCard.style.border = 'none';
+        btnQr.style.background = '#ffffff';
+        btnQr.style.color = '#2c4c3b';
+        btnQr.style.border = '1.5px solid #ebd9bf';
+    } else if (tabName === 'qr') {
+        tabTestCard.style.display = 'none';
+        tabQr.style.display = 'block';
+        btnTestCard.style.background = '#ffffff';
+        btnTestCard.style.color = '#2c4c3b';
+        btnTestCard.style.border = '1.5px solid #ebd9bf';
+        btnQr.style.background = '#005cb4';
+        btnQr.style.color = '#fff';
+        btnQr.style.border = 'none';
+    }
+}
+
+function fillTestCardData() {
+    const num = document.getElementById('vnpayCardNumber');
+    const holder = document.getElementById('vnpayCardHolder');
+    const date = document.getElementById('vnpayCardDate');
+    const otp = document.getElementById('vnpayCardOtp');
+    if (num) num.value = '9704 1985 2619 1432 198';
+    if (holder) holder.value = 'NGUYEN VAN A';
+    if (date) date.value = '07/15';
+    if (otp) otp.value = '123456';
+}
+
+function formatCardNumberInput(input) {
+    let val = input.value.replace(/\D/g, '');
+    let formatted = '';
+    for (let i = 0; i < val.length; i++) {
+        if (i > 0 && i % 4 === 0) formatted += ' ';
+        formatted += val[i];
+    }
+    input.value = formatted;
+}
+
+function formatDateInput(input) {
+    let val = input.value.replace(/\D/g, '');
+    if (val.length >= 2) {
+        input.value = val.slice(0, 2) + '/' + val.slice(2, 4);
+    } else {
+        input.value = val;
+    }
+}
+
+function submitBankCardPayment() {
+    if (!currentVNPayOrderId) {
+        alert("Không tìm thấy thông tin đơn hàng!");
+        return;
+    }
+
+    const cardNum = (document.getElementById('vnpayCardNumber')?.value || '').replace(/\s+/g, '');
+    const cardHolder = (document.getElementById('vnpayCardHolder')?.value || '').trim();
+    const cardDate = (document.getElementById('vnpayCardDate')?.value || '').trim();
+    const cardOtp = (document.getElementById('vnpayCardOtp')?.value || '').trim();
+
+    if (!cardNum) {
+        alert("Vui lòng nhập số thẻ ngân hàng (hoặc nhấn nút 'Điền NGUYEN VAN A')!");
+        document.getElementById('vnpayCardNumber')?.focus();
+        return;
+    }
+    if (!cardHolder) {
+        alert("Vui lòng nhập tên chủ thẻ (NGUYEN VAN A)!");
+        document.getElementById('vnpayCardHolder')?.focus();
+        return;
+    }
+    if (!cardDate) {
+        alert("Vui lòng nhập ngày phát hành (07/15)!");
+        document.getElementById('vnpayCardDate')?.focus();
+        return;
+    }
+    if (!cardOtp) {
+        alert("Vui lòng nhập mã xác thực OTP (123456)!");
+        document.getElementById('vnpayCardOtp')?.focus();
+        return;
+    }
+
+    const btn = document.getElementById('btnPayWithTestCard');
+    let origHtml = '';
+    if (btn) {
+        origHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xác thực thẻ NGUYEN VAN A...';
+    }
+
+    fetch(`/api/orders/${currentVNPayOrderId}/pay_vnpay_test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            card_number: cardNum,
+            card_holder: cardHolder,
+            issue_date: cardDate,
+            otp: cardOtp
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success' && data.redirect_url) {
+            window.location.href = data.redirect_url;
+        } else {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
+            alert(data.error || data.message || "Xác thực thẻ không thành công!");
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+        alert("Đã xảy ra lỗi kết nối khi xác thực thẻ ngân hàng.");
+    });
+}
+
+function payWithTestCard() {
+    submitBankCardPayment();
+}
+
+function openVNPayModal(orderId, totalAmount, paymentUrl) {
+    currentVNPayOrderId = orderId;
+    const modal = document.getElementById('vnpayPaymentModalBackdrop');
+    if (!modal) return;
+
+    const subTitle = document.getElementById('vnpayModalOrderSubtitle');
+    if (subTitle) subTitle.innerText = `Mã đơn hàng: #${orderId}`;
+
+    const amtEl = document.getElementById('vnpayModalAmount');
+    if (amtEl) amtEl.innerText = Number(totalAmount).toLocaleString('vi-VN') + ' ₫';
+
+    const memoEl = document.getElementById('vnpayTransferContent');
+    const memo = `DH${orderId}`;
+    if (memoEl) memoEl.innerText = memo;
+
+    const qrImg = document.getElementById('vnpayModalQrImg');
+    if (qrImg) {
+        const qrUrl = `https://img.vietqr.io/image/970428-9704198526191432198-compact2.png?amount=${Math.round(totalAmount)}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent('FOOD SHOPPE')}`;
+        qrImg.src = qrUrl;
+    }
+
+    const gatewayBtn = document.getElementById('btnOpenVnpayGateway');
+    if (gatewayBtn) {
+        gatewayBtn.href = paymentUrl || '#';
+    }
+
+    switchVNPayTab('testcard');
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeVNPayModal() {
+    const modal = document.getElementById('vnpayPaymentModalBackdrop');
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+function copyPaymentText(text, btnElement) {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+        const orig = btnElement.innerHTML;
+        btnElement.innerHTML = '<i class="fa-solid fa-check"></i> Đã chép!';
+        btnElement.style.background = '#d4edda';
+        btnElement.style.color = '#155724';
+        setTimeout(() => {
+            btnElement.innerHTML = orig;
+            btnElement.style.background = '';
+            btnElement.style.color = '';
+        }, 2000);
+    }).catch(() => {
+        alert("Đã sao chép: " + text);
+    });
+}
+
+function confirmPaymentDone() {
+    if (!currentVNPayOrderId) {
+        closeVNPayModal();
+        window.location.href = '/orders';
+        return;
+    }
+
+    const btn = document.getElementById('btnConfirmPaid');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xác nhận...';
+    }
+
+    fetch(`/api/orders/${currentVNPayOrderId}/confirm_payment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        closeVNPayModal();
+        alert(data.message || "Xác nhận thanh toán thành công! Đang chuyển đến trang theo dõi đơn hàng.");
+        window.location.href = '/orders';
+    })
+    .catch(err => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Tôi Đã Chuyển Khoản Xong';
+        }
+        window.location.href = '/orders';
+    });
+}
+
 document.addEventListener('click', function (e) {
-    const modalBackdrop = document.getElementById('checkoutModalBackdrop');
-    if (e.target === modalBackdrop) {
+    const checkoutModal = document.getElementById('checkoutModalBackdrop');
+    if (e.target === checkoutModal) {
         closeCheckoutModal();
+    }
+    const vnpayModal = document.getElementById('vnpayPaymentModalBackdrop');
+    if (e.target === vnpayModal) {
+        closeVNPayModal();
     }
 });
 
 document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         closeCheckoutModal();
+        closeVNPayModal();
     }
 });

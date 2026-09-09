@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết Quả Thanh Toán VNPAY | Food Shoppe</title>
+    <meta name="description" content="Kết quả giao dịch thanh toán qua cổng VNPAY tại Food Shoppe.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        .vnpay-result-wrapper {
+            max-width: 680px;
+            margin: 25px auto 50px;
+            padding: 0 16px;
+        }
+
+        .vnpay-card {
+            background: #ffffff;
+            border: 2px solid #ecd8ba;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .vnpay-header-status {
+            padding: 36px 24px 28px;
+        }
+
+        .vnpay-header-status.success {
+            background: linear-gradient(180deg, rgba(39, 174, 96, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+            border-bottom: 1.5px solid #d4edda;
+        }
+
+        .vnpay-header-status.failed {
+            background: linear-gradient(180deg, rgba(192, 57, 43, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+            border-bottom: 1.5px solid #f8d7da;
+        }
+
+        .status-icon-circle {
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
+            margin-bottom: 16px;
+        }
+
+        .status-icon-circle.success {
+            background: #27ae60;
+            color: #ffffff;
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.3);
+        }
+
+        .status-icon-circle.failed {
+            background: #c0392b;
+            color: #ffffff;
+            box-shadow: 0 6px 20px rgba(192, 57, 43, 0.3);
+        }
+
+        .vnpay-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0 0 8px;
+        }
+
+        .vnpay-title.success {
+            color: #1e7e34;
+        }
+
+        .vnpay-title.failed {
+            color: #c0392b;
+        }
+
+        .vnpay-desc {
+            font-size: 14.5px;
+            color: #374151;
+            font-weight: 500;
+            max-width: 480px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        .vnpay-details-box {
+            padding: 24px 28px;
+            text-align: left;
+        }
+
+        .vnpay-detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #faf8f4;
+            border: 1.5px solid #ebd9bf;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .vnpay-detail-table tr {
+            border-bottom: 1px solid #ebd9bf;
+        }
+
+        .vnpay-detail-table tr:last-child {
+            border-bottom: none;
+        }
+
+        .vnpay-detail-table td {
+            padding: 12px 18px;
+            font-size: 13.5px;
+        }
+
+        .vnpay-detail-table td.label {
+            color: #111827;
+            font-weight: 700;
+            width: 42%;
+        }
+
+        .vnpay-detail-table td.value {
+            color: #1f2937;
+            font-weight: 600;
+            text-align: right;
+            word-break: break-word;
+        }
+
+        .amount-highlight {
+            font-size: 20px !important;
+            font-weight: 800 !important;
+            color: #c0392b !important;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+        }
+
+        .vnpay-actions {
+            padding: 20px 28px 30px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action-primary {
+            background: var(--primary-green, #23592d);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 12px 26px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(35, 89, 45, 0.2);
+        }
+
+        .btn-action-primary:hover {
+            background: var(--primary-green-dark, #194020);
+            transform: translateY(-1px);
+        }
+
+        .btn-action-secondary {
+            background: #ffffff;
+            color: var(--primary-green-dark, #2c4c3b);
+            border: 1.5px solid #dfcfb7;
+            text-decoration: none;
+            padding: 12px 22px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-action-secondary:hover {
+            background: #faf6ea;
+            border-color: #cda434;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+
+<div class="site-wrapper">
+    <nav class="main-nav" id="topNav">
+        <div class="nav-container">
+            <div class="nav-links-left">
+                <a href="/" class="nav-link"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="/#restaurants" class="nav-link"><i class="fa-solid fa-store"></i> Restaurant</a>
+                <a href="/about" class="nav-link"><i class="fa-solid fa-circle-info"></i> About Us</a>
+                <a href="/orders" class="nav-link"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử đơn hàng</a>
+                <a href="/cart" class="nav-link"><i class="fa-solid fa-basket-shopping"></i> Giỏ hàng ({{ cart_stats.total_quantity if cart_stats else 0 }})</a>
+            </div>
+            <div class="nav-auth-right">
+                {% if current_user and current_user.is_authenticated %}
+                <div class="user-dropdown-wrapper">
+                    <button type="button" class="user-dropdown-toggle" id="userDropdownBtn" onclick="toggleUserDropdown(event)">
+                        <i class="fa-solid fa-circle-user"></i>
+                        <span>Chào, <strong>{{ current_user.username }}</strong></span>
+                        <i class="fa-solid fa-chevron-down dropdown-arrow"></i>
+                    </button>
+                    <div class="user-dropdown-menu" id="userDropdownMenu">
+                        <div class="user-dropdown-header">
+                            <div class="user-avatar-small">{{ current_user.username[0]|upper }}</div>
+                            <div class="user-info-text">
+                                <div class="user-name-text">{{ current_user.username }}</div>
+                                <div class="user-role-text">Khách hàng</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="/profile" class="dropdown-item"><i class="fa-solid fa-id-card"></i> <span>Hồ sơ cá nhân</span></a>
+                        <a href="/orders" class="dropdown-item"><i class="fa-solid fa-clock-rotate-left"></i> <span>Lịch sử đơn hàng</span></a>
+                        <a href="/cart" class="dropdown-item"><i class="fa-solid fa-basket-shopping"></i> <span>Giỏ hàng của tôi</span></a>
+                    </div>
+                </div>
+                <a href="/logout" class="nav-logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</a>
+                {% else %}
+                <a href="/login" class="nav-login-btn"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <header class="site-header">
+        <div class="brand-banner">
+            <a href="/">
+                <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="FOOD SHOPPE" class="brand-svg">
+            </a>
+        </div>
+    </header>
+
+    <div class="page-breadcrumb-bar">
+        <div class="breadcrumb-left">
+            <a href="/" class="breadcrumb-link"><i class="fa-solid fa-house"></i> Trang chủ</a>
+            <span class="breadcrumb-separator"><i class="fa-solid fa-chevron-right"></i></span>
+            <span class="breadcrumb-current">Kết quả thanh toán VNPAY</span>
+        </div>
+        <div class="breadcrumb-right">
+            <i class="fa-solid fa-qrcode" style="color: #cda434;"></i> Cổng thanh toán <strong>VNPAY Sandbox</strong>
+        </div>
+    </div>
+
+    <main class="vnpay-result-wrapper">
+        <div class="vnpay-card">
+            <div class="vnpay-header-status {% if is_success %}success{% else %}failed{% endif %}">
+                <div class="status-icon-circle {% if is_success %}success{% else %}failed{% endif %}">
+                    {% if is_success %}
+                        <i class="fa-solid fa-check"></i>
+                    {% else %}
+                        <i class="fa-solid fa-xmark"></i>
+                    {% endif %}
+                </div>
+
+                <h1 class="vnpay-title {% if is_success %}success{% else %}failed{% endif %}">
+                    {% if is_success %}
+                        Thanh Toán VNPAY Thành Công!
+                    {% else %}
+                        Thanh Toán Không Thành Công
+                    {% endif %}
+                </h1>
+
+                <p class="vnpay-desc">
+                    {% if is_success %}
+                        Giao dịch thanh toán trực tuyến của bạn đã được đối soát và ghi nhận thành công. Đơn hàng đang được nhà hàng tiếp nhận và chế biến.
+                    {% else %}
+                        {{ message }}
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="vnpay-details-box">
+                <table class="vnpay-detail-table">
+                    <tr>
+                        <td class="label">Mã đơn hàng</td>
+                        <td class="value">
+                            <span style="color: var(--primary-green-dark, #2c4c3b); font-weight: 800;">
+                                #{{ order.id if order else (order_id or '---') }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Mã giao dịch VNPAY</td>
+                        <td class="value">{{ transaction_no or 'Chưa hoàn tất' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Ngân hàng thanh toán</td>
+                        <td class="value">{{ bank_code or 'VNPAY-QR' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Số tiền thanh toán</td>
+                        <td class="value amount-highlight">
+                            {{ "{:,.0f}".format(amount if amount > 0 else (order.total_amount if order else 0)) }} ₫
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Thời gian giao dịch</td>
+                        <td class="value">
+                            {{ pay_date.strftime('%H:%M:%S - %d/%m/%Y') if pay_date else 'Gần đây' }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">Nội dung thanh toán</td>
+                        <td class="value">{{ order_info or ('Thanh toan don hang #' ~ (order.id if order else '')) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Trạng thái thanh toán</td>
+                        <td class="value">
+                            {% if is_success %}
+                                <span style="background: #d4edda; color: #155724; padding: 3px 10px; border-radius: 12px; font-size: 12.5px; font-weight: 700;">
+                                    <i class="fa-solid fa-circle-check"></i> Đã thanh toán
+                                </span>
+                            {% else %}
+                                <span style="background: #f8d7da; color: #721c24; padding: 3px 10px; border-radius: 12px; font-size: 12.5px; font-weight: 700;">
+                                    <i class="fa-solid fa-circle-xmark"></i> Thất bại / Đã hủy
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="vnpay-actions">
+                {% if is_success %}
+                    <a href="/orders" class="btn-action-primary">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Theo Dõi Đơn Hàng Tại Đây
+                    </a>
+                    <a href="/" class="btn-action-secondary">
+                        <i class="fa-solid fa-house"></i> Về Trang Chủ
+                    </a>
+                {% else %}
+                    {% if order and order.status.value != 'CANCELLED' %}
+                        <button type="button" class="btn-action-primary" onclick="retryPayment({{ order.id }})">
+                            <i class="fa-solid fa-rotate-right"></i> Thử Thanh Toán Lại
+                        </button>
+                    {% endif %}
+                    <a href="/orders" class="btn-action-secondary">
+                        <i class="fa-solid fa-receipt"></i> Xem Danh Sách Đơn Hàng
+                    </a>
+                    <a href="/" class="btn-action-secondary">
+                        <i class="fa-solid fa-house"></i> Về Trang Chủ
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <p>© 2026 Food Shoppe • Deli • Market • Catering. All rights reserved.</p>
+        <p style="margin-top: 4px; font-size: 12px; opacity: 0.85;">Hệ thống thanh toán trực tuyến an toàn &amp; bảo mật qua cổng VNPAY.</p>
+    </footer>
+</div>
+
+<script>
+function retryPayment(orderId) {
+    fetch(`/api/orders/${orderId}/pay_vnpay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.payment_url) {
+            window.location.href = data.payment_url;
+        } else {
+            alert(data.error || 'Không thể tạo phiên thanh toán mới.');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Đã xảy ra lỗi kết nối máy chủ.');
+    });
+}
+</script>
+
+<script src="{{ url_for('static', filename='js/nav.js') }}"></script>
+</body>
+</html>
