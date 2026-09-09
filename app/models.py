@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from flask_login import UserMixin
 import bcrypt
+from sqlalchemy import text
 from app import db
 
 
@@ -168,7 +169,20 @@ class Review(BaseModel):
     )
 
 
+class ChatMessage(BaseModel):
+    __tablename__ = 'chat_messages'
+
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False, index=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    message = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
+
+    order = db.relationship('Order', backref=db.backref('chat_messages', lazy='dynamic', cascade='all, delete-orphan'))
+    sender = db.relationship('User')
+
+
 def seed_data():
+    ChatMessage.query.delete()
     Review.query.delete()
     Payment.query.delete()
     OrderItem.query.delete()
@@ -179,6 +193,14 @@ def seed_data():
     Category.query.delete()
     Restaurant.query.delete()
     User.query.delete()
+    db.session.commit()
+
+    tables = ['chat_messages', 'reviews', 'payments', 'order_items', 'orders', 'cart_items', 'carts', 'dishes', 'categories', 'restaurants', 'users']
+    for t in tables:
+        try:
+            db.session.execute(text(f'ALTER TABLE {t} AUTO_INCREMENT = 1;'))
+        except Exception:
+            pass
     db.session.commit()
 
     default_password = bcrypt.hashpw(b"123456", bcrypt.gensalt()).decode('utf-8')

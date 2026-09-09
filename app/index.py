@@ -9,7 +9,7 @@ from app import app, dao, login, db
 from flask_login import login_user, logout_user, current_user, login_required
 from app.utils import get_cart_stats, get_res_total
 from app.models import Order, OrderItem, Payment, OrderStatusEnum, PaymentMethodEnum, PaymentStatusEnum, RoleEnum, \
-    Restaurant
+    Restaurant, Dish
 from app.vnpay import build_vnpay_payment_url, verify_vnpay_response, get_vnpay_response_message
 
 
@@ -319,6 +319,16 @@ def restaurant_dishes(restaurant_id):
 @app.route('/cart')
 def cart_view():
     cart = session.get('cart', {})
+    if cart:
+        changed = False
+        valid_res_ids = {r.id for r in Restaurant.query.filter(Restaurant.id.in_([int(k) for k in cart.keys() if k.isdigit()])).all()}
+        for k in list(cart.keys()):
+            if not k.isdigit() or int(k) not in valid_res_ids:
+                del cart[k]
+                changed = True
+        if changed:
+            session['cart'] = cart
+            session.modified = True
     cart_stats = get_cart_stats(cart)
     return render_template('cart.html', cart_stats=cart_stats)
 
@@ -436,6 +446,14 @@ def checkout_restaurant(restaurant_id):
         if res_id_str not in cart or not cart[res_id_str].get('items'):
             return jsonify({"error": "Nhà hàng này không có món nào trong giỏ!"}), 400
 
+        restaurant = Restaurant.query.get(restaurant_id)
+        if not restaurant:
+            if res_id_str in cart:
+                del cart[res_id_str]
+                session['cart'] = cart
+                session.modified = True
+            return jsonify({"error": "Nhà hàng này không còn tồn tại hoặc dữ liệu vừa được làm mới. Vui lòng chọn món lại!"}), 400
+
         data = request.get_json() or {}
         delivery_address = data.get('delivery_address', "")
 
@@ -449,6 +467,14 @@ def checkout_restaurant(restaurant_id):
             payment_method = PaymentMethodEnum.CASH
 
         items_data = cart[res_id_str]['items']
+        for dish_id, item in items_data.items():
+            if not Dish.query.get(int(dish_id)):
+                if res_id_str in cart:
+                    del cart[res_id_str]
+                    session['cart'] = cart
+                    session.modified = True
+                return jsonify({"error": f"Món '{item.get('name', '')}' không còn tồn tại trong hệ thống. Vui lòng chọn lại món!"}), 400
+
         total_amount = sum(item['quantity'] * item['price'] for item in items_data.values())
 
         new_order = Order(
@@ -497,6 +523,8 @@ def checkout_restaurant(restaurant_id):
                 "payment_method": "VNPAY",
                 "payment_url": payment_url,
                 "order_id": new_order.id,
+                "restaurant_name": new_order.restaurant.name if new_order.restaurant else "Nhà hàng",
+                "restaurant_image": (new_order.restaurant.image_url if new_order.restaurant and new_order.restaurant.image_url else '/static/images/storefront.jpg'),
                 "total_amount": float(new_order.total_amount),
                 "message": "Đặt hàng thành công! Vui lòng hoàn tất thanh toán.",
                 "grand_total_quantity": res_stats['total_quantity'],
@@ -508,6 +536,8 @@ def checkout_restaurant(restaurant_id):
             "payment_method": "CASH",
             "message": f"Đặt hàng thành công! Mã đơn hàng: #{new_order.id}",
             "order_id": new_order.id,
+            "restaurant_name": new_order.restaurant.name if new_order.restaurant else "Nhà hàng",
+            "restaurant_image": (new_order.restaurant.image_url if new_order.restaurant and new_order.restaurant.image_url else '/static/images/storefront.jpg'),
             "grand_total_quantity": res_stats['total_quantity'],
             "grand_total_amount": res_stats['total_amount']
         }), 200
@@ -785,3 +815,99 @@ def pay_vnpay_test(order_id):
         "message": "Thanh toán bằng thẻ test VNPAY (NGUYEN VAN A) thành công!",
         "redirect_url": redirect_url
     }), 200
+
+
+@app.route('/api/chat/active_order', methods=['GET'])
+def get_active_chat_order():
+    if not current_user.is_authenticated:
+        return jsonify({"active": False})
+
+    order = dao.get_active_order_for_user(current_user.id)
+    if not order:
+        return jsonify({"active": False})
+
+    restaurant = order.restaurant
+    return jsonify({
+        "active": True,
+        "order_id": order.id,
+        "restaurant_id": restaurant.id,
+        "restaurant_name": restaurant.name,
+        "restaurant_image": restaurant.image_url or '/static/images/storefront.jpg',
+        "order_status": order.status.value,
+        "created_at": order.created_at.strftime('%H:%M | %d/%m/%Y')
+    })
+
+
+@app.route('/api/chat/<int:order_id>/messages', methods=['GET'])
+@login_required
+def get_order_chat_messages(order_id):
+    order = Order.query.get(order_id)
+    if not order:
+        return jsonify({"error": "Không tìm thấy đơn hàng!"}), 404
+
+    is_customer = (order.user_id == current_user.id)
+    is_owner = (order.restaurant.owner_id == current_user.id)
+    is_admin = (current_user.role == RoleEnum.ADMIN)
+
+    if not (is_customer or is_owner or is_admin):
+        return jsonify({"error": "Bạn không có quyền xem cuộc trò chuyện này!"}), 403
+
+    after_id = request.args.get('after_id', type=int)
+    messages = dao.get_chat_messages(order_id, after_id=after_id)
+    dao.mark_chat_messages_read(order_id, current_user.id)
+
+    msg_list = []
+    for m in messages:
+        msg_list.append({
+            "id": m.id,
+            "sender_id": m.sender_id,
+            "sender_name": m.sender.username,
+            "is_me": (m.sender_id == current_user.id),
+            "is_restaurant": (m.sender_id == order.restaurant.owner_id),
+            "message": m.message,
+            "created_at": m.created_at.strftime('%H:%M')
+        })
+
+    return jsonify({
+        "status": "success",
+        "order_id": order.id,
+        "restaurant_name": order.restaurant.name,
+        "restaurant_image": order.restaurant.image_url or '/static/images/storefront.jpg',
+        "customer_name": order.customer.username,
+        "messages": msg_list
+    })
+
+
+@app.route('/api/chat/<int:order_id>/send', methods=['POST'])
+@login_required
+def send_order_chat_message(order_id):
+    order = Order.query.get(order_id)
+    if not order:
+        return jsonify({"error": "Không tìm thấy đơn hàng!"}), 404
+
+    is_customer = (order.user_id == current_user.id)
+    is_owner = (order.restaurant.owner_id == current_user.id)
+    is_admin = (current_user.role == RoleEnum.ADMIN)
+
+    if not (is_customer or is_owner or is_admin):
+        return jsonify({"error": "Bạn không có quyền gửi tin nhắn trong đơn này!"}), 403
+
+    data = request.get_json(silent=True) or {}
+    text = (data.get('message') or '').strip()
+    if not text:
+        return jsonify({"error": "Nội dung tin nhắn không được để trống!"}), 400
+
+    new_msg = dao.add_chat_message(order_id, current_user.id, text)
+
+    return jsonify({
+        "status": "success",
+        "message": {
+            "id": new_msg.id,
+            "sender_id": new_msg.sender_id,
+            "sender_name": current_user.username,
+            "is_me": True,
+            "is_restaurant": (new_msg.sender_id == order.restaurant.owner_id),
+            "message": new_msg.message,
+            "created_at": new_msg.created_at.strftime('%H:%M')
+        }
+    })
