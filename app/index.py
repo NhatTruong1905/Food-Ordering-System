@@ -711,22 +711,52 @@ def restaurant_dashboard():
     if not restaurant:
         return "Tài khoản của bạn chưa được liên kết với nhà hàng nào.", 404
 
-    orders = Order.query.join(Payment).filter(
-        Order.restaurant_id == restaurant.id,
-        or_(
-            Payment.method == PaymentMethodEnum.CASH,
-            Payment.status == PaymentStatusEnum.SUCCESS
+    orders = Order.query.filter_by(restaurant_id=restaurant.id) \
+        .order_by(Order.created_at.desc()).all()
+        
+    categories = dao.get_all_categories()
+
+    return render_template('restaurant_dashboard.html', restaurant=restaurant, orders=orders, categories=categories)
+
+
+@app.route('/restaurant/dish/add', methods=['POST'])
+@login_required
+def add_restaurant_dish():
+    if current_user.role != RoleEnum.RESTAURANT:
+        flash("Không có quyền thực hiện thao tác này!", "danger")
+        return redirect('/')
+
+    restaurant = Restaurant.query.filter_by(owner_id=current_user.id).first()
+    if not restaurant:
+        flash("Không tìm thấy nhà hàng của bạn!", "danger")
+        return redirect('/restaurant/dashboard')
+
+    name = request.form.get('name')
+    category_id = request.form.get('category_id')
+    price = request.form.get('price')
+    description = request.form.get('description')
+    image_url = request.form.get('image_url')
+    flavor_tags = request.form.get('flavor_tags')
+
+    if not name or not category_id or not price:
+        flash("Vui lòng điền đầy đủ các thông tin bắt buộc (Tên món, Danh mục, Giá).", "danger")
+        return redirect('/restaurant/dashboard')
+
+    try:
+        dao.add_dish(
+            restaurant_id=restaurant.id,
+            category_id=int(category_id),
+            name=name,
+            description=description,
+            price=price,
+            image_url=image_url,
+            flavor_tags=flavor_tags
         )
-    ).order_by(Order.created_at.desc()).all()
+        flash("Thêm món ăn mới thành công!", "success")
+    except Exception as e:
+        flash(f"Đã có lỗi xảy ra: {str(e)}", "danger")
 
-    reviews = dao.get_restaurant_reviews(restaurant.id)
-    review_stats = dao.get_restaurant_review_stats(restaurant.id)
-
-    return render_template('restaurant_dashboard.html',
-                           restaurant=restaurant,
-                           orders=orders,
-                           reviews=reviews,
-                           review_stats=review_stats)
+    return redirect('/restaurant/dashboard')
 
 
 @app.route('/api/orders/<int:order_id>/status', methods=['PUT'])
