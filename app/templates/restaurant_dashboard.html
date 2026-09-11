@@ -72,7 +72,6 @@
     </header>
 
     <main class="main-container single-column" style="max-width: 1000px; margin: 30px auto; padding: 0 15px;">
-<<<<<<< HEAD
         
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -97,49 +96,7 @@
                     <i class="fa-solid fa-plus"></i> Thêm Món Mới
                 </button>
             </div>
-=======
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
-            <div style="background: #ffffff; border: 1.5px solid #ecd8ba; border-radius: 10px; padding: 18px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 16px;">
-                <div style="width: 48px; height: 48px; border-radius: 10px; background: #e8f5e9; color: #2e7d32; display: flex; align-items: center; justify-content: center; font-size: 22px;">
-                    <i class="fa-solid fa-receipt"></i>
-                </div>
-                <div>
-                    <div style="font-size: 13px; color: #666; font-weight: 600;">Tổng Đơn Hàng</div>
-                    <div style="font-size: 22px; font-weight: 800; color: #1a4224;">{{ orders|length }}</div>
-                </div>
-            </div>
 
-            <div style="background: #ffffff; border: 1.5px solid #ecd8ba; border-radius: 10px; padding: 18px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 16px;">
-                <div style="width: 48px; height: 48px; border-radius: 10px; background: #fff8e7; color: #d89f28; display: flex; align-items: center; justify-content: center; font-size: 22px;">
-                    <i class="fa-solid fa-star"></i>
-                </div>
-                <div>
-                    <div style="font-size: 13px; color: #666; font-weight: 600;">Điểm Đánh Giá</div>
-                    <div style="font-size: 22px; font-weight: 800; color: #b8860b;">
-                        {{ review_stats.avg_rating if review_stats else restaurant.rating_avg }} <span style="font-size: 16px; color: #f1c40f;">★</span>
-                        <span style="font-size: 13px; color: #888; font-weight: 500;">({{ review_stats.total_reviews if review_stats else 0 }} lượt)</span>
-                    </div>
-                </div>
-            </div>
-
-            <div style="background: #ffffff; border: 1.5px solid #ecd8ba; border-radius: 10px; padding: 18px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 16px;">
-                <div style="width: 48px; height: 48px; border-radius: 10px; background: #e3f2fd; color: #0288d1; display: flex; align-items: center; justify-content: center; font-size: 22px;">
-                    <i class="fa-solid fa-comments"></i>
-                </div>
-                <div>
-                    <div style="font-size: 13px; color: #666; font-weight: 600;">Bình Luận Mới</div>
-                    <div style="font-size: 22px; font-weight: 800; color: #0288d1;">{{ reviews|length if reviews else 0 }}</div>
-                </div>
-            </div>
-        </div>
-
-        <div style="background: #ffffff; border: 2px solid #ecd8ba; border-radius: 12px; padding: 30px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); margin-bottom: 30px;">
-            
-            <h2 style="font-family:'Playfair Display', serif; color: var(--primary-green-dark); margin-bottom: 8px; font-size: 24px;">
-                <i class="fa-solid fa-bell-concierge" style="color:#cda434;"></i> Quản Lý Đơn Hàng: {{ restaurant.name }}
-            </h2>
-            <p style="color: #666; font-size: 14px; margin-bottom: 25px;">Chấp nhận và cập nhật trạng thái đơn hàng của thực khách tại đây.</p>
->>>>>>> main
 
             <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14.5px;">
