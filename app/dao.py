@@ -1,7 +1,8 @@
 import bcrypt
+from decimal import Decimal
 from sqlalchemy import or_
 from app import db
-from app.models import Restaurant, Dish, User, RoleEnum, Order, OrderStatusEnum, PaymentStatusEnum
+from app.models import Restaurant, Dish, User, RoleEnum, Order, OrderStatusEnum, PaymentStatusEnum, Category
 
 
 def hash_password(password: str) -> str:
@@ -166,3 +167,21 @@ def get_dishes_by_restaurant(restaurant_id):
         Dish.restaurant_id == restaurant_id,
         Dish.is_active.is_(True)
     ).all()
+
+def get_all_categories():
+    return Category.query.all()
+
+
+def add_dish(restaurant_id, category_id, name, description, price, image_url, flavor_tags):
+    new_dish = Dish(
+        restaurant_id=restaurant_id,
+        category_id=category_id,
+        name=name.strip(),
+        description=description.strip() if description else None,
+        price=Decimal(price),
+        image_url=image_url.strip() if image_url else None,
+        flavor_tags=flavor_tags.strip() if flavor_tags else None
+    )
+    db.session.add(new_dish)
+    db.session.commit()
+    return new_dish
