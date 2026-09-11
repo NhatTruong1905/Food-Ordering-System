@@ -1,0 +1,31 @@
+<div class="floating-chat-widget" id="floatingChatWidget" data-current-user-id="{{ current_user.id if current_user.is_authenticated else '' }}" data-current-user-name="{{ current_user.username if current_user.is_authenticated else '' }}">
+    <div class="chat-widget-header">
+        <div class="chat-widget-title">
+            <img src="{{ url_for('static', filename='images/storefront.jpg') }}" alt="Restaurant" class="chat-restaurant-avatar" id="chatRestaurantAvatar" onerror="this.src='/static/images/storefront.jpg'">
+            <div>
+                <div class="chat-restaurant-name" id="chatRestaurantName">Nhà hàng</div>
+                <div class="chat-order-tag" id="chatOrderTag">
+                    <span class="chat-online-dot"></span>
+                    <span id="chatOrderTitle">Đơn hàng</span>
+                </div>
+            </div>
+        </div>
+        <button type="button" class="chat-close-btn" onclick="toggleChatWidget()" title="Đóng chat" aria-label="Đóng chat">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <div class="chat-widget-body" id="chatMessagesContainer">
+        <div id="chatEmptyPlaceholder" style="text-align: center; color: #888; font-size: 13px; margin: auto; padding: 20px;">
+            <i class="fa-solid fa-comments" style="font-size: 32px; color: #d4c5a9; margin-bottom: 8px; display: block;"></i>
+            Bắt đầu trò chuyện với nhà hàng về đơn hàng của bạn.
+        </div>
+    </div>
+    <div class="chat-widget-footer">
+        <input type="text" class="chat-input" id="chatInput" placeholder="Nhập tin nhắn..." autocomplete="off">
+        <button type="button" class="chat-send-btn" id="btnSendChat" onclick="sendChatMessage()" title="Gửi" aria-label="Gửi">
+            <i class="fa-solid fa-paper-plane"></i>
+        </button>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>

@@ -244,8 +244,8 @@
                 </label>
 
                 <div class="payment-options-group" style="display: flex; flex-direction: column; gap: 10px;">
-                    <label class="payment-option-card active" id="card-method-CASH" onclick="selectPaymentMethod('CASH')">
-                        <input type="radio" name="checkout_payment_method" value="CASH" checked style="accent-color: var(--primary-green, #23592d);">
+                    <label class="payment-option-card" id="card-method-CASH" onclick="selectPaymentMethod('CASH')">
+                        <input type="radio" name="checkout_payment_method" value="CASH" style="accent-color: var(--primary-green, #23592d);">
                         <div class="payment-card-icon" style="background: rgba(39, 174, 96, 0.12); color: #27ae60;">
                             <i class="fa-solid fa-money-bill-wave"></i>
                         </div>
@@ -268,6 +268,9 @@
                             <div style="font-size: 12px; color: #777;">Quét mã QR, ứng dụng ngân hàng, ví điện tử VNPAY</div>
                         </div>
                     </label>
+                </div>
+                <div id="paymentMethodError" style="display: none; margin-top: 8px; font-size: 12.5px; color: #c0392b; font-weight: 600;">
+                    <i class="fa-solid fa-circle-exclamation"></i> Vui lòng chọn 1 trong 2 phương thức thanh toán trên!
                 </div>
             </div>
         </div>
@@ -439,12 +442,14 @@
         </div>
 
         <div class="checkout-modal-footer" style="padding: 12px 22px; background: #faf8f4; border-top: 1px solid #ebd9bf; display: flex; justify-content: flex-end;">
-            <button type="button" class="btn-cancel-modal" onclick="closeVNPayModal()" style="background: transparent; border: 1px solid #ccc; color: #555; padding: 8px 18px; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                Đóng / Thanh toán sau
+            <button type="button" class="btn-cancel-modal" onclick="cancelUnpaidVNPayOrder()" style="background: transparent; border: 1.5px solid #c0392b; color: #c0392b; padding: 8px 18px; border-radius: 6px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+                <i class="fa-solid fa-xmark"></i> Hủy thanh toán / Đóng
             </button>
         </div>
     </div>
 </div>
+
+{% include 'chat_widget.html' %}
 
 <script>
     window.DEFAULT_USER_ADDRESS = "{{ (current_user.address or '')|replace('\"', '\\\"') if current_user and current_user.is_authenticated else '' }}";

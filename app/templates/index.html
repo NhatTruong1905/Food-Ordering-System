@@ -189,46 +189,25 @@
                 </div>
             </div>
 
-            <div class="testimonials-section" id="testimonials">
-                <h2 class="section-subtitle-serif" style="font-size: 20px;">
-                    <i class="fa-solid fa-quote-left" style="color: var(--accent-gold); margin-right: 6px;"></i>
-                    Cảm Nhận Từ Thực Khách
-                </h2>
-                <div class="testimonial-grid">
-                    {% if testimonials %}
-                        {% for t in testimonials %}
-                            <div class="testimonial-card">
-                                <div class="stars">
-                                    {% for i in range(t.rating) %}
-                                        <i class="fa-solid fa-star"></i>
-                                    {% endfor %}
-                                </div>
-                                <p class="quote">"{{ t.comment }}"</p>
-                                <div class="author">— {{ t.name }}</div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="testimonial-card">
-                            <div class="stars">
-                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                    class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                    class="fa-solid fa-star"></i>
-                            </div>
-                            <p class="quote">"Thịt bò mềm mọng nước, sốt tiêu đen rất vừa miệng và chuẩn vị cay mình
-                                thích!"</p>
-                            <div class="author">— Nguyễn Văn An</div>
-                        </div>
-                        <div class="testimonial-card">
-                            <div class="stars">
-                                <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                    class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
-                                    class="fa-solid fa-star"></i>
-                            </div>
-                            <p class="quote">"Salad cá hồi rất tươi ngon, bánh mì giòn rụm. Không gian quán ấm
-                                cúng!"</p>
-                            <div class="author">— Trần Thị Bình</div>
-                        </div>
-                    {% endif %}
+            <div class="testimonials-section" id="testimonials" style="display: none; margin-top: 32px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <h2 class="section-subtitle-serif" style="font-size: 20px; margin: 0;">
+                            <i class="fa-solid fa-quote-left" style="color: var(--accent-gold); margin-right: 6px;"></i>
+                            Cảm Nhận Từ Thực Khách
+                        </h2>
+                        <p style="font-size: 12.5px; color: var(--text-muted); margin: 3px 0 0 0;" id="testimonialsSub">
+                            Đánh giá thực tế từ khách hàng về các món ăn của nhà hàng
+                        </p>
+                    </div>
+                    <span id="testimonialsRestaurantBadge" style="font-size: 12.5px; font-weight: 700; color: #1a4224; background: #e8f5e9; border: 1px solid #c8e6c9; padding: 4px 12px; border-radius: 20px; display: none;">
+                    </span>
+                </div>
+                <div class="testimonial-grid" id="testimonialGrid">
+                </div>
+                <div id="noTestimonialsMsg" style="display: none; padding: 26px; text-align: center; color: #777; background: #ffffff; border-radius: 8px; border: 1px dashed #ecd8ba; font-size: 13.5px;">
+                    <i class="fa-regular fa-comment-dots" style="font-size: 28px; color: #cda434; margin-bottom: 8px; display: block;"></i>
+                    Nhà hàng này chưa có nhận xét nào từ thực khách. Hãy là người đầu tiên đặt món và chia sẻ cảm nhận nhé!
                 </div>
             </div>
 
@@ -432,6 +411,8 @@
     <span class="floating-cart-badge cart-counter" id="floatingCartBadge">{{ cart_stats.total_quantity if cart_stats else 0 }}</span>
     <span class="floating-cart-tooltip">Xem giỏ hàng (<span class="cart-counter">{{ cart_stats.total_quantity if cart_stats else 0 }}</span> món)</span>
 </a>
+
+{% include 'chat_widget.html' %}
 
 <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>

@@ -259,13 +259,9 @@
                                     <strong style="color: #111827;">Phương thức:</strong>
                                     <span>{{ 'Thanh toán tiền mặt (COD)' if order.payment.method.value == 'CASH' else 'Cổng thanh toán VNPAY' }}</span>
                                 </div>
-                                {% if order.payment.status.value == 'SUCCESS' %}
+                                {% if order.payment.method.value == 'VNPAY' and order.payment.status.value == 'SUCCESS' %}
                                     <span style="font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; display: inline-flex; align-items: center; gap: 4px;">
                                         <i class="fa-solid fa-circle-check"></i> Đã thanh toán (VNPAY)
-                                    </span>
-                                {% else %}
-                                    <span style="font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; display: inline-flex; align-items: center; gap: 4px;">
-                                        <i class="fa-solid fa-hourglass-half"></i> Chưa thanh toán
                                     </span>
                                 {% endif %}
                                 {% if order.payment.transaction_id %}
@@ -279,13 +275,58 @@
 
                         <div class="order-items-table" style="background: #faf8f4; border: 1.5px solid #ebd9bf; border-radius: 8px; padding: 12px 18px; margin-bottom: 16px;">
                             {% for item in order.items %}
-                                <div class="order-item-row" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dotted #ebd9bf; font-size: 13.5px;">
-                                    <div>
-                                        <strong style="color: #111827;">{{ item.dish.name if item.dish else 'Món ngon' }}</strong>
-                                        <span style="color: #1a4224; font-weight: 700; background: #f4ecd9; padding: 2px 8px; border-radius: 4px; margin-left: 8px;">× {{ item.quantity }}</span>
+                                {% set dish_rev = order_reviews.get(order.id, {}).get(item.dish_id) if order_reviews else None %}
+                                <div class="order-item-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dotted #ebd9bf; font-size: 13.5px; flex-wrap: wrap; gap: 10px;">
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        {% if item.dish and item.dish.image_url %}
+                                            <img src="{{ item.dish.image_url }}" alt="{{ item.dish.name }}" style="width: 44px; height: 44px; border-radius: 6px; object-fit: cover; border: 1px solid #ebd9bf; flex-shrink: 0;">
+                                        {% else %}
+                                            <div style="width: 44px; height: 44px; border-radius: 6px; background: #ebd9bf; display: flex; align-items: center; justify-content: center; color: #8c7355; flex-shrink: 0;">
+                                                <i class="fa-solid fa-utensils"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <div>
+                                                <strong style="color: #111827;">{{ item.dish.name if item.dish else 'Món ngon' }}</strong>
+                                                <span style="color: #1a4224; font-weight: 700; background: #f4ecd9; padding: 2px 8px; border-radius: 4px; margin-left: 8px;">× {{ item.quantity }}</span>
+                                            </div>
+                                            {% if order.status.value == 'COMPLETED' and dish_rev %}
+                                                <div style="margin-top: 4px; font-size: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                                    <span style="color: #f39c12; font-weight: 700; letter-spacing: 1px;">
+                                                        {% for s in range(dish_rev.rating) %}★{% endfor %}{% for s in range(5 - dish_rev.rating) %}☆{% endfor %}
+                                                    </span>
+                                                    <span style="color: #555; font-style: italic;">
+                                                        {% if dish_rev.comment %}"{{ dish_rev.comment }}"{% else %}(Đã đánh giá {{ dish_rev.rating }} sao){% endif %}
+                                                    </span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
                                     </div>
-                                    <div style="font-weight: 700; color: var(--primary-green-dark, #2c4c3b);">
-                                        {{ "{:,.0f}".format(item.price_at_purchase * item.quantity) }} ₫
+
+                                    <div style="display: flex; align-items: center; gap: 14px; margin-left: auto;">
+                                        <div style="font-weight: 700; color: var(--primary-green-dark, #2c4c3b);">
+                                            {{ "{:,.0f}".format(item.price_at_purchase * item.quantity) }} ₫
+                                        </div>
+                                        {% if order.status.value == 'COMPLETED' %}
+                                            {% if dish_rev %}
+                                                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                                    <span style="background: #e8f5e9; color: #1e7e34; border: 1px solid #c3e6cb; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);" title="{{ dish_rev.comment or 'Đã gửi đánh giá' }}">
+                                                        <i class="fa-solid fa-circle-check" style="color: #28a745;"></i> Đã đánh giá ({{ dish_rev.rating }}★)
+                                                    </span>
+                                                    {% if dish_rev.comment %}
+                                                        <span style="font-size: 11.5px; color: #666; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-style: italic;" title="{{ dish_rev.comment }}">
+                                                            "{{ dish_rev.comment }}"
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                            {% else %}
+                                                <button type="button" class="btn-review-dish"
+                                                        onclick="openReviewModal({{ order.id }}, {{ item.dish_id }}, '{{ (item.dish.name if item.dish else 'Món ăn')|replace('\'', '\\\'') }}', '{{ item.dish.image_url if item.dish and item.dish.image_url else '' }}', '{{ (order.restaurant.name if order.restaurant else 'Nhà hàng')|replace('\'', '\\\'') }}')"
+                                                        style="background: linear-gradient(135deg, #cda434, #b8860b); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 6px rgba(184,134,11,0.25); transition: all 0.2s;">
+                                                    <i class="fa-solid fa-star"></i> Đánh giá món
+                                                </button>
+                                            {% endif %}
+                                        {% endif %}
                                     </div>
                                 </div>
                             {% endfor %}
@@ -298,15 +339,16 @@
                             </div>
 
                             <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                                {% if order.payment and order.payment.method.value == 'VNPAY' and order.payment.status.value != 'SUCCESS' and order.status.value != 'CANCELLED' %}
-                                    <button type="button" class="btn-pay-vnpay" onclick="retryVNPay({{ order.id }})" style="background: #005cb4; color: #ffffff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
-                                        <i class="fa-solid fa-qrcode"></i> Thanh toán VNPAY
-                                    </button>
-                                {% endif %}
 
                                 {% if order.status.value == 'PENDING' and not (order.payment and order.payment.status.value == 'SUCCESS') %}
                                     <button type="button" class="btn-cancel-order" onclick="cancelOrder({{ order.id }})">
                                         <i class="fa-solid fa-xmark"></i> Hủy đơn hàng
+                                    </button>
+                                {% endif %}
+
+                                {% if order.status.value != 'CANCELLED' %}
+                                    <button type="button" class="btn-chat-restaurant" onclick="openChatWithOrder({{ order.id }}, '{{ (order.restaurant.name if order.restaurant else 'Nhà hàng')|replace('\'', '\\\'') }}', '{{ order.restaurant.image_url if order.restaurant and order.restaurant.image_url else '' }}')" style="background: #1a4224; color: #ffffff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                                        <i class="fa-solid fa-comments"></i> Chat với chủ nhà hàng
                                     </button>
                                 {% endif %}
 
@@ -506,6 +548,79 @@
                 Đóng / Thanh toán sau
             </button>
         </div>
+    </div>
+</div>
+
+<div id="dishReviewModalBackdrop" class="checkout-modal-backdrop" style="display: none; z-index: 100001; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
+    <div class="checkout-modal-dialog" style="max-width: 500px; width: 100%; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.25); border: 2px solid #ecd8ba; animation: modalFadeIn 0.25s ease;">
+        <div class="checkout-modal-header" style="background: linear-gradient(135deg, #1a4224, #2c4c3b); color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(205,164,52,0.2); color: #f1c40f; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                    <i class="fa-solid fa-star"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-family: 'Playfair Display', Georgia, serif; font-size: 19px; color: #fff;" id="reviewModalTitle">
+                        Đánh Giá Món Ăn
+                    </h3>
+                    <div style="font-size: 12px; color: rgba(255,255,255,0.85); margin-top: 2px;" id="reviewModalRestaurant">
+                        Nhà hàng • Lưu ý: Mỗi món chỉ đánh giá 1 lần
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn-close-modal" onclick="closeReviewModal()" style="color: #fff; background: rgba(255,255,255,0.15); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s;" aria-label="Đóng">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form id="dishReviewForm" onsubmit="handleReviewSubmit(event)" style="margin: 0;">
+            <div class="checkout-modal-body" style="padding: 24px;">
+                <div style="display: flex; align-items: center; gap: 14px; background: #faf8f4; border: 1.5px solid #ebd9bf; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px;">
+                    <img id="reviewDishImage" src="" alt="Món ăn" style="width: 56px; height: 56px; border-radius: 8px; object-fit: cover; border: 1px solid #ebd9bf; flex-shrink: 0;">
+                    <div id="reviewDishFallbackIcon" style="width: 56px; height: 56px; border-radius: 8px; background: #ebd9bf; display: flex; align-items: center; justify-content: center; color: #8c7355; font-size: 22px; flex-shrink: 0;">
+                        <i class="fa-solid fa-utensils"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 15px; color: #111827;" id="reviewDishName">Tên món ăn</div>
+                        <div style="font-size: 12px; color: #777; margin-top: 3px;">Mã đơn hàng: #<span id="reviewOrderIdText" style="font-weight: 600; color: #1a4224;">---</span></div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-bottom: 22px;">
+                    <label style="display: block; font-weight: 700; font-size: 14px; color: #111827; margin-bottom: 8px;">
+                        Chất lượng món ăn như thế nào?
+                    </label>
+                    <div id="starRatingContainer" style="display: inline-flex; gap: 10px; font-size: 34px; cursor: pointer; user-select: none;">
+                        <i class="fa-solid fa-star review-star" data-star="1" onmouseover="hoverStars(1)" onmouseout="resetStarHover()" onclick="selectStar(1)"></i>
+                        <i class="fa-solid fa-star review-star" data-star="2" onmouseover="hoverStars(2)" onmouseout="resetStarHover()" onclick="selectStar(2)"></i>
+                        <i class="fa-solid fa-star review-star" data-star="3" onmouseover="hoverStars(3)" onmouseout="resetStarHover()" onclick="selectStar(3)"></i>
+                        <i class="fa-solid fa-star review-star" data-star="4" onmouseover="hoverStars(4)" onmouseout="resetStarHover()" onclick="selectStar(4)"></i>
+                        <i class="fa-solid fa-star review-star" data-star="5" onmouseover="hoverStars(5)" onmouseout="resetStarHover()" onclick="selectStar(5)"></i>
+                    </div>
+                    <div id="starRatingLabel" style="font-size: 13.5px; font-weight: 700; color: #b8860b; margin-top: 8px; min-height: 20px;">
+                        5 sao - Cực kỳ hài lòng / Tuyệt vời!
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label for="reviewCommentInput" style="font-weight: 700; font-size: 13.5px; color: #111827;">
+                            Cảm nhận chi tiết của bạn (tùy chọn)
+                        </label>
+                        <span id="commentCharCount" style="font-size: 11.5px; color: #888;">0 / 500</span>
+                    </div>
+                    <textarea id="reviewCommentInput" rows="4" maxlength="500" placeholder="Món ăn có hợp khẩu vị của bạn không? Nước sốt, độ nóng và độ tươi ngon ra sao..." oninput="updateCharCount(this)" style="width: 100%; border: 1.5px solid #ebd9bf; border-radius: 8px; padding: 10px 14px; font-family: inherit; font-size: 13.5px; line-height: 1.5; resize: vertical; box-sizing: border-box; outline: none; transition: border-color 0.2s;"></textarea>
+                </div>
+            </div>
+
+            <div class="checkout-modal-footer" style="padding: 14px 24px; background: #faf8f4; border-top: 1px solid #ebd9bf; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeReviewModal()" style="padding: 10px 18px; border: 1.5px solid #ebd9bf; background: #fff; color: #555; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+                    Đóng
+                </button>
+                <button type="submit" id="btnSubmitReview" style="padding: 10px 24px; border: none; background: linear-gradient(135deg, #1a4224, #2c4c3b); color: #fff; border-radius: 6px; font-size: 13.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(26,66,36,0.25);">
+                    <i class="fa-solid fa-paper-plane"></i> Gửi Đánh Giá
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -779,20 +894,153 @@ function cancelOrder(orderId) {
     });
 }
 
+let currentReviewOrderId = null;
+let currentReviewDishId = null;
+let selectedStarRating = 5;
+
+const starTexts = {
+    1: '1 sao - Rất tệ / Không hài lòng',
+    2: '2 sao - Không ngon / Cần cải thiện',
+    3: '3 sao - Bình thường / Tạm ổn',
+    4: '4 sao - Ngon miệng / Hài lòng',
+    5: '5 sao - Cực kỳ hài lòng / Tuyệt vời!'
+};
+
+function openReviewModal(orderId, dishId, dishName, dishImage, restaurantName) {
+    currentReviewOrderId = orderId;
+    currentReviewDishId = dishId;
+    selectedStarRating = 5;
+
+    document.getElementById('reviewModalTitle').innerText = 'Đánh Giá Món Ăn';
+    document.getElementById('reviewModalRestaurant').innerText = (restaurantName || 'Nhà hàng') + ' • Lưu ý: Mỗi món chỉ đánh giá 1 lần';
+    document.getElementById('reviewOrderIdText').innerText = orderId;
+    document.getElementById('reviewDishName').innerText = dishName;
+
+    const imgEl = document.getElementById('reviewDishImage');
+    const fallbackEl = document.getElementById('reviewDishFallbackIcon');
+    if (dishImage && dishImage.trim() !== '') {
+        imgEl.src = dishImage;
+        imgEl.style.display = 'block';
+        if (fallbackEl) fallbackEl.style.display = 'none';
+    } else {
+        imgEl.style.display = 'none';
+        if (fallbackEl) fallbackEl.style.display = 'flex';
+    }
+
+    const commentInput = document.getElementById('reviewCommentInput');
+    commentInput.value = '';
+    updateCharCount(commentInput);
+
+    selectStar(5);
+
+    const backdrop = document.getElementById('dishReviewModalBackdrop');
+    backdrop.style.display = 'flex';
+}
+
+function closeReviewModal() {
+    const backdrop = document.getElementById('dishReviewModalBackdrop');
+    if (backdrop) backdrop.style.display = 'none';
+}
+
+function selectStar(star) {
+    selectedStarRating = star;
+    renderStars(star);
+    document.getElementById('starRatingLabel').innerText = starTexts[star] || '';
+}
+
+function hoverStars(star) {
+    renderStars(star);
+    document.getElementById('starRatingLabel').innerText = starTexts[star] || '';
+}
+
+function resetStarHover() {
+    renderStars(selectedStarRating);
+    document.getElementById('starRatingLabel').innerText = starTexts[selectedStarRating] || '';
+}
+
+function renderStars(activeCount) {
+    const stars = document.querySelectorAll('.review-star');
+    stars.forEach(s => {
+        const starNum = parseInt(s.getAttribute('data-star'));
+        if (starNum <= activeCount) {
+            s.style.color = '#f1c40f';
+            s.style.transform = 'scale(1.15)';
+        } else {
+            s.style.color = '#d0c8b8';
+            s.style.transform = 'scale(1.0)';
+        }
+        s.style.transition = 'all 0.15s ease';
+    });
+}
+
+function updateCharCount(el) {
+    const countEl = document.getElementById('commentCharCount');
+    if (countEl) countEl.innerText = `${el.value.length} / 500`;
+}
+
+function handleReviewSubmit(e) {
+    e.preventDefault();
+    if (!currentReviewOrderId || !currentReviewDishId) {
+        alert('Thông tin món ăn hoặc đơn hàng không hợp lệ!');
+        return;
+    }
+
+    const btn = document.getElementById('btnSubmitReview');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang gửi...';
+
+    const comment = document.getElementById('reviewCommentInput').value;
+
+    fetch(`/api/orders/${currentReviewOrderId}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            dish_id: currentReviewDishId,
+            rating: selectedStarRating,
+            comment: comment
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'Gửi đánh giá món ăn thành công!');
+            closeReviewModal();
+            window.location.reload();
+        } else {
+            alert(data.message || 'Không thể gửi đánh giá.');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    })
+    .catch(err => {
+        console.error('Lỗi khi gửi đánh giá:', err);
+        alert('Đã xảy ra lỗi kết nối khi gửi đánh giá món ăn!');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
+}
+
 document.addEventListener('click', function (e) {
     const vnpayModal = document.getElementById('vnpayPaymentModalBackdrop');
     if (e.target === vnpayModal) {
         closeVNPayModal();
+    }
+    const reviewModal = document.getElementById('dishReviewModalBackdrop');
+    if (e.target === reviewModal) {
+        closeReviewModal();
     }
 });
 
 document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         closeVNPayModal();
+        closeReviewModal();
     }
 });
 </script>
 
+{% include 'chat_widget.html' %}
 <script src="{{ url_for('static', filename='js/nav.js') }}"></script>
 </body>
 </html>

@@ -788,6 +788,8 @@
     <span class="floating-cart-tooltip">Xem giỏ hàng (<span class="cart-counter">{{ cart_stats.total_quantity if cart_stats else 0 }}</span> món)</span>
 </a>
 
+{% include 'chat_widget.html' %}
+
 <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
 <script src="{{ url_for('static', filename='js/nav.js') }}"></script>
 </body>

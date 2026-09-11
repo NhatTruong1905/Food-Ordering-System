@@ -530,50 +530,8 @@ def restaurant_dashboard():
 
     orders = Order.query.filter_by(restaurant_id=restaurant.id) \
         .order_by(Order.created_at.desc()).all()
-        
-    categories = dao.get_all_categories()
 
-    return render_template('restaurant_dashboard.html', restaurant=restaurant, orders=orders, categories=categories)
-
-
-@app.route('/restaurant/dish/add', methods=['POST'])
-@login_required
-def add_restaurant_dish():
-    if current_user.role != RoleEnum.RESTAURANT:
-        flash("Không có quyền thực hiện thao tác này!", "danger")
-        return redirect('/')
-
-    restaurant = Restaurant.query.filter_by(owner_id=current_user.id).first()
-    if not restaurant:
-        flash("Không tìm thấy nhà hàng của bạn!", "danger")
-        return redirect('/restaurant/dashboard')
-
-    name = request.form.get('name')
-    category_id = request.form.get('category_id')
-    price = request.form.get('price')
-    description = request.form.get('description')
-    image_url = request.form.get('image_url')
-    flavor_tags = request.form.get('flavor_tags')
-
-    if not name or not category_id or not price:
-        flash("Vui lòng điền đầy đủ các thông tin bắt buộc (Tên món, Danh mục, Giá).", "danger")
-        return redirect('/restaurant/dashboard')
-
-    try:
-        dao.add_dish(
-            restaurant_id=restaurant.id,
-            category_id=int(category_id),
-            name=name,
-            description=description,
-            price=price,
-            image_url=image_url,
-            flavor_tags=flavor_tags
-        )
-        flash("Thêm món ăn mới thành công!", "success")
-    except Exception as e:
-        flash(f"Đã có lỗi xảy ra: {str(e)}", "danger")
-
-    return redirect('/restaurant/dashboard')
+    return render_template('restaurant_dashboard.html', restaurant=restaurant, orders=orders)
 
 
 @app.route('/api/orders/<int:order_id>/status', methods=['PUT'])

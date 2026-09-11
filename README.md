@@ -8,30 +8,32 @@ Dự án ứng dụng web đặt món được xây dựng bằng **Python Flask
 
 ```text
 Food-Ordering-System/
-├── .env                  # Cấu hình biến môi trường CSDL (DB_USER, DB_PASSWORD, DB_HOST, DB_NAME, DB_PORT...)
-├── .env.example          # File mẫu cấu hình biến môi trường cho môi trường mới
-├── requirements.txt      # Danh sách thư viện Python yêu cầu
-├── README.md             # Tài liệu giới thiệu & Hướng dẫn sử dụng hệ thống
+├── .env
+├── .env.example
+├── requirements.txt
+├── README.md
 │
-└── app/                  # Toàn bộ mã nguồn hệ thống
-    ├── __init__.py       # Khởi tạo Flask app và cấu hình kết nối SQLAlchemy (mã hóa mật khẩu ký tự đặc biệt)
-    ├── models.py         # 10 Models CSDL & Hàm nạp dữ liệu mẫu 20 nhà hàng thực tế kèm thực đơn seed_data()
-    ├── dao.py            # Tầng Data Access Object: Tìm kiếm Tên/Địa chỉ, Phân trang, Lấy món ăn theo quán
-    ├── index.py          # Tầng Controller: Khai báo Routes('/', '/api/restaurants', '/api/restaurants/<id>/dishes')
-    ├── run.py            # Điểm khởi chạy chính của Server Flask
+└── app/
+    ├── __init__.py
+    ├── models.py
+    ├── dao.py
+    ├── index.py
+    ├── run.py
+    ├── utils.py
+    ├── vnpay.py
     │
     ├── templates/
-    │   └── index.html    # Giao diện chính hiển thị Navbar, Danh sách Nhà hàng, Thực đơn động, Modal chi tiết
+    │   └── index.html
     │
     └── static/
         ├── css/
-        │   └── style.css # Định dạng màu sắc vintage, layout 1440px, modal popup, thẻ nhà hàng, thẻ món ăn
+        │   └── style.css
         ├── js/
-        │   └── main.js   # Tìm kiếm real-time, phân trang động, Modal chi tiết nhà hàng, nạp thực đơn món ăn
+        │   └── main.js
         └── images/
-            ├── logo.svg           # Logo vector Food Shoppe
-            ├── storefront.jpg     # Hình ảnh mặt tiền nhà hàng
-            └── interior_tour.jpg  # Hình ảnh tour tham quan bên trong
+            ├── logo.svg
+            ├── storefront.jpg
+            └── interior_tour.jpg
 ```
 
 ---
