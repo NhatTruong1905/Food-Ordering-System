@@ -72,56 +72,159 @@
     </header>
 
     <main class="main-container single-column" style="max-width: 1000px; margin: 30px auto; padding: 0 15px;">
-        <div style="background: #ffffff; border: 2px solid #ecd8ba; border-radius: 12px; padding: 30px; box-shadow: 0 8px 24px rgba(0,0,0,0.06);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+            <div style="background: #ffffff; border: 1.5px solid #ecd8ba; border-radius: 10px; padding: 18px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 16px;">
+                <div style="width: 48px; height: 48px; border-radius: 10px; background: #e8f5e9; color: #2e7d32; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: #666; font-weight: 600;">Tổng Đơn Hàng</div>
+                    <div style="font-size: 22px; font-weight: 800; color: #1a4224;">{{ orders|length }}</div>
+                </div>
+            </div>
+
+            <div style="background: #ffffff; border: 1.5px solid #ecd8ba; border-radius: 10px; padding: 18px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 16px;">
+                <div style="width: 48px; height: 48px; border-radius: 10px; background: #fff8e7; color: #d89f28; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+                    <i class="fa-solid fa-star"></i>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: #666; font-weight: 600;">Điểm Đánh Giá</div>
+                    <div style="font-size: 22px; font-weight: 800; color: #b8860b;">
+                        {{ review_stats.avg_rating if review_stats else restaurant.rating_avg }} <span style="font-size: 16px; color: #f1c40f;">★</span>
+                        <span style="font-size: 13px; color: #888; font-weight: 500;">({{ review_stats.total_reviews if review_stats else 0 }} lượt)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: #ffffff; border: 1.5px solid #ecd8ba; border-radius: 10px; padding: 18px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 16px;">
+                <div style="width: 48px; height: 48px; border-radius: 10px; background: #e3f2fd; color: #0288d1; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+                    <i class="fa-solid fa-comments"></i>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: #666; font-weight: 600;">Bình Luận Mới</div>
+                    <div style="font-size: 22px; font-weight: 800; color: #0288d1;">{{ reviews|length if reviews else 0 }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: #ffffff; border: 2px solid #ecd8ba; border-radius: 12px; padding: 30px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); margin-bottom: 30px;">
             
             <h2 style="font-family:'Playfair Display', serif; color: var(--primary-green-dark); margin-bottom: 8px; font-size: 24px;">
-                <i class="fa-solid fa-bell-concierge" style="color:#cda434;"></i> Bảng Điều Khiển Nhà Hàng: {{ restaurant.name }}
+                <i class="fa-solid fa-bell-concierge" style="color:#cda434;"></i> Quản Lý Đơn Hàng: {{ restaurant.name }}
             </h2>
             <p style="color: #666; font-size: 14px; margin-bottom: 25px;">Chấp nhận và cập nhật trạng thái đơn hàng của thực khách tại đây.</p>
 
-            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14.5px;">
-                <thead>
-                    <tr style="background: #faf6ea; border-bottom: 2px solid #ecd8ba;">
-                        <th style="padding: 14px 12px; color: var(--primary-green-dark);">Mã Đơn</th>
-                        <th style="padding: 14px 12px; color: var(--primary-green-dark);">Thời gian</th>
-                        <th style="padding: 14px 12px; color: var(--primary-green-dark);">Địa chỉ giao</th>
-                        <th style="padding: 14px 12px; color: var(--primary-green-dark);">Tổng tiền</th>
-                        <th style="padding: 14px 12px; color: var(--primary-green-dark);">Cập nhật Trạng thái</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for o in orders %}
-                    <tr style="border-bottom: 1px solid #eee; transition: background 0.2s;" onmouseover="this.style.background='#fdfbf7'" onmouseout="this.style.background='transparent'">
-                        <td style="padding: 14px 12px; font-weight: bold;">#{{ o.id }}</td>
-                        <td style="padding: 14px 12px; color: #555;">{{ o.created_at.strftime('%H:%M | %d/%m/%Y') }}</td>
-                        <td style="padding: 14px 12px;">{{ o.delivery_address }}</td>
-                        <td style="padding: 14px 12px; color: #d89f28; font-weight: 800;">
-                            {{ "{:,.0f}".format(o.total_amount) }} ₫
-                        </td>
-                        <td style="padding: 14px 12px; display: flex; align-items: center; gap: 8px;">
-                            <select onchange="updateStatus({{ o.id }}, this.value)" style="padding: 8px 12px; border: 1px solid #d4c5a9; border-radius: 6px; background: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; outline: none;">
-                                <option value="PENDING" {% if o.status.name == 'PENDING' %}selected{% endif %}>🕒 Chờ xác nhận</option>
-                                <option value="CONFIRMED" {% if o.status.name == 'CONFIRMED' %}selected{% endif %}>✔️ Đã xác nhận</option>
-                                <option value="PREPARING" {% if o.status.name == 'PREPARING' %}selected{% endif %}>🍳 Đang chuẩn bị</option>
-                                <option value="DELIVERING" {% if o.status.name == 'DELIVERING' %}selected{% endif %}>🛵 Đang giao hàng</option>
-                                <option value="COMPLETED" {% if o.status.name == 'COMPLETED' %}selected{% endif %}>✅ Hoàn thành</option>
-                                <option value="CANCELLED" {% if o.status.name == 'CANCELLED' %}selected{% endif %}>❌ Đã Hủy</option>
-                            </select>
-                            <button type="button" onclick="openChatWithOrder({{ o.id }}, 'Khách hàng (Đơn #{{ o.id }})', '')" style="padding: 8px 12px; background: #1a4224; color: #ffffff; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;" title="Nhắn tin với khách hàng" aria-label="Nhắn tin với khách hàng">
-                                <i class="fa-solid fa-comments"></i> Chat
-                            </button>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="5" style="padding: 30px; text-align: center; color: #777;">
-                            <i class="fa-solid fa-inbox" style="font-size: 30px; color: #d4c5a9; margin-bottom: 10px; display:block;"></i>
-                            Chưa có đơn hàng nào.
-                        </td>
-                    </tr>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14.5px;">
+                    <thead>
+                        <tr style="background: #faf6ea; border-bottom: 2px solid #ecd8ba;">
+                            <th style="padding: 14px 12px; color: var(--primary-green-dark);">Mã Đơn</th>
+                            <th style="padding: 14px 12px; color: var(--primary-green-dark);">Thời gian</th>
+                            <th style="padding: 14px 12px; color: var(--primary-green-dark);">Địa chỉ giao</th>
+                            <th style="padding: 14px 12px; color: var(--primary-green-dark);">Tổng tiền</th>
+                            <th style="padding: 14px 12px; color: var(--primary-green-dark);">Cập nhật Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for o in orders %}
+                        <tr style="border-bottom: 1px solid #eee; transition: background 0.2s;" onmouseover="this.style.background='#fdfbf7'" onmouseout="this.style.background='transparent'">
+                            <td style="padding: 14px 12px; font-weight: bold;">#{{ o.id }}</td>
+                            <td style="padding: 14px 12px; color: #555;">{{ o.created_at.strftime('%H:%M | %d/%m/%Y') }}</td>
+                            <td style="padding: 14px 12px;">{{ o.delivery_address }}</td>
+                            <td style="padding: 14px 12px; color: #d89f28; font-weight: 800;">
+                                {{ "{:,.0f}".format(o.total_amount) }} ₫
+                            </td>
+                            <td style="padding: 14px 12px; display: flex; align-items: center; gap: 8px;">
+                                <select onchange="updateStatus({{ o.id }}, this.value)" style="padding: 8px 12px; border: 1px solid #d4c5a9; border-radius: 6px; background: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; outline: none;">
+                                    <option value="PENDING" {% if o.status.name == 'PENDING' %}selected{% endif %}>🕒 Chờ xác nhận</option>
+                                    <option value="CONFIRMED" {% if o.status.name == 'CONFIRMED' %}selected{% endif %}>✔️ Đã xác nhận</option>
+                                    <option value="PREPARING" {% if o.status.name == 'PREPARING' %}selected{% endif %}>🍳 Đang chuẩn bị</option>
+                                    <option value="DELIVERING" {% if o.status.name == 'DELIVERING' %}selected{% endif %}>🛵 Đang giao hàng</option>
+                                    <option value="COMPLETED" {% if o.status.name == 'COMPLETED' %}selected{% endif %}>✅ Hoàn thành</option>
+                                    <option value="CANCELLED" {% if o.status.name == 'CANCELLED' %}selected{% endif %}>❌ Đã Hủy</option>
+                                </select>
+                                <button type="button" onclick="openChatWithOrder({{ o.id }}, 'Khách hàng (Đơn #{{ o.id }})', '')" style="padding: 8px 12px; background: #1a4224; color: #ffffff; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;" title="Nhắn tin với khách hàng" aria-label="Nhắn tin với khách hàng">
+                                    <i class="fa-solid fa-comments"></i> Chat
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" style="padding: 30px; text-align: center; color: #777;">
+                                <i class="fa-solid fa-inbox" style="font-size: 30px; color: #d4c5a9; margin-bottom: 10px; display:block;"></i>
+                                Chưa có đơn hàng nào.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="background: #ffffff; border: 2px solid #ecd8ba; border-radius: 12px; padding: 30px; box-shadow: 0 8px 24px rgba(0,0,0,0.06);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <h2 style="font-family:'Playfair Display', serif; color: var(--primary-green-dark); margin: 0; font-size: 22px;">
+                        <i class="fa-solid fa-comments" style="color:#cda434;"></i> Đánh Giá & Nhận Xét Của Khách Hàng
+                    </h2>
+                    <p style="color: #666; font-size: 13.5px; margin: 4px 0 0 0;">Theo dõi phản hồi và số sao thực khách đánh giá cho các món ăn của nhà hàng.</p>
+                </div>
+                <div style="background: #fff8e7; border: 1.5px solid #ecd8ba; border-radius: 8px; padding: 6px 14px; font-size: 13.5px; font-weight: 700; color: #b8860b;">
+                    ⭐ {{ review_stats.avg_rating if review_stats else restaurant.rating_avg }} / 5.0 ({{ review_stats.total_reviews if review_stats else (reviews|length if reviews else 0) }} lượt đánh giá)
+                </div>
+            </div>
+
+            {% if reviews and reviews|length > 0 %}
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                    {% for rev in reviews %}
+                        <div style="background: #faf8f4; border: 1px solid #ecd8ba; border-radius: 10px; padding: 16px; display: flex; gap: 16px; align-items: flex-start; transition: all 0.2s;" onmouseover="this.style.borderColor='#cda434'" onmouseout="this.style.borderColor='#ecd8ba'">
+                            <div style="width: 44px; height: 44px; border-radius: 50%; background: #1a4224; color: #ffd269; font-weight: 800; font-size: 17px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                {{ (rev.user.username[0]|upper) if rev.user and rev.user.username else 'K' }}
+                            </div>
+
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 8px;">
+                                    <div>
+                                        <strong style="color: #111827; font-size: 14.5px;">{{ rev.user.username if rev.user else 'Khách hàng' }}</strong>
+                                        <span style="color: #888; font-size: 12px; margin-left: 6px;">đã đánh giá món</span>
+                                        <span style="font-weight: 700; color: #1a4224; font-size: 13.5px; background: #e8f5e9; padding: 2px 8px; border-radius: 4px; margin-left: 4px;">
+                                            {{ rev.dish.name if rev.dish else 'Món ăn' }}
+                                        </span>
+                                    </div>
+                                    <div style="font-size: 12px; color: #888;">
+                                        <i class="fa-regular fa-clock"></i> {{ rev.created_at.strftime('%H:%M - %d/%m/%Y') if rev.created_at else '' }}
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                    <div style="color: #f1c40f; font-size: 15px; letter-spacing: 2px;">
+                                        {% for s in range(rev.rating) %}★{% endfor %}{% for s in range(5 - rev.rating) %}<span style="color: #d8cbb8;">★</span>{% endfor %}
+                                    </div>
+                                    <span style="font-size: 12px; font-weight: 700; color: #b8860b;">
+                                        {{ rev.rating }}/5 sao
+                                    </span>
+                                    <span style="font-size: 12px; color: #888;">• Đơn hàng #{{ rev.order_id }}</span>
+                                </div>
+
+                                {% if rev.comment and rev.comment.strip() %}
+                                    <div style="background: #ffffff; border: 1px solid #eee; border-left: 3px solid #cda434; border-radius: 6px; padding: 10px 14px; font-size: 13.5px; color: #333; line-height: 1.5;">
+                                        "{{ rev.comment }}"
+                                    </div>
+                                {% else %}
+                                    <div style="font-size: 12.5px; color: #888; font-style: italic;">
+                                        (Khách hàng không để lại nhận xét bằng lời)
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     {% endfor %}
-                </tbody>
-            </table>
+                </div>
+            {% else %}
+                <div style="padding: 40px 20px; text-align: center; color: #777; background: #faf8f4; border: 1px dashed #ecd8ba; border-radius: 8px;">
+                    <i class="fa-regular fa-comment-dots" style="font-size: 34px; color: #d4c5a9; margin-bottom: 10px; display: block;"></i>
+                    Chưa có đánh giá nào từ thực khách cho nhà hàng này.
+                </div>
+            {% endif %}
         </div>
     </main>
 
