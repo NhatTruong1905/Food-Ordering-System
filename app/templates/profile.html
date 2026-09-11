@@ -421,8 +421,17 @@
                                     </div>
                                     <div style="background: #faf8f4; border: 1px solid #ebd9bf; border-radius: 8px; padding: 10px 16px; margin-bottom: 12px;">
                                         {% for item in order.items %}
+                                            {% set dish_rev = order_reviews.get(order.id, {}).get(item.dish_id) if order_reviews else None %}
                                             <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dotted #ebd9bf; font-size: 13.5px;">
-                                                <span><strong style="color: #111827;">{{ item.dish.name if item.dish else 'Món ngon' }}</strong> <span style="color: #1a4224; font-weight: 700; background: #f4ecd9; padding: 2px 8px; border-radius: 4px; margin-left: 6px;">× {{ item.quantity }}</span></span>
+                                                <span>
+                                                    <strong style="color: #111827;">{{ item.dish.name if item.dish else 'Món ngon' }}</strong>
+                                                    <span style="color: #1a4224; font-weight: 700; background: #f4ecd9; padding: 2px 8px; border-radius: 4px; margin-left: 6px;">× {{ item.quantity }}</span>
+                                                    {% if order.status.value == 'COMPLETED' and dish_rev %}
+                                                        <span style="color: #f39c12; font-size: 12px; margin-left: 8px; font-weight: 700;" title="{{ dish_rev.comment or 'Đã đánh giá' }}">
+                                                            {% for s in range(dish_rev.rating) %}★{% endfor %}
+                                                        </span>
+                                                    {% endif %}
+                                                </span>
                                                 <span style="font-weight: 700; color: var(--primary-green-dark, #2c4c3b);">
                                                     {{ "{:,.0f}".format(item.price_at_purchase * item.quantity) }} ₫
                                                 </span>
@@ -430,10 +439,15 @@
                                         {% endfor %}
                                     </div>
                                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14.5px; flex-wrap: wrap;">
-                                        <div>
+                                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                                             <a href="/orders" style="font-size: 12.5px; font-weight: 700; color: #005cb4; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                                                 <i class="fa-solid fa-arrow-up-right-from-square"></i> Theo dõi tại Lịch sử đơn hàng
                                             </a>
+                                            {% if order.status.value == 'COMPLETED' %}
+                                                <a href="/orders?status=COMPLETED" style="font-size: 12px; font-weight: 700; color: #b8860b; background: #fff8e7; border: 1px solid #ebd9bf; padding: 3px 10px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                                                    <i class="fa-solid fa-star" style="color: #f1c40f;"></i> Đánh giá món ăn
+                                                </a>
+                                            {% endif %}
                                         </div>
                                         <div style="display: flex; align-items: center; gap: 8px;">
                                             <span style="font-weight: 700; color: #111827;">Tổng thanh toán:</span>

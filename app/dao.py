@@ -1,7 +1,7 @@
 import bcrypt
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from app import db
-from app.models import Restaurant, Dish, User, RoleEnum, Order, OrderStatusEnum, PaymentStatusEnum, Payment
+from app.models import Restaurant, Dish, User, RoleEnum, Order, OrderStatusEnum, PaymentStatusEnum, Payment, Review, PaymentMethodEnum
 
 
 def hash_password(password: str) -> str:
@@ -78,7 +78,13 @@ def update_user_profile(user_id, email, phone=None, address=None, taste_preferen
     return user, None
 
 def get_orders_by_user(user_id, status=None):
-    query = Order.query.filter_by(user_id=user_id)
+    query = Order.query.join(Payment).filter(
+        Order.user_id == user_id,
+        or_(
+            Payment.method == PaymentMethodEnum.CASH,
+            Payment.status == PaymentStatusEnum.SUCCESS
+        )
+    )
     if status and status != 'ALL':
         try:
             status_enum = OrderStatusEnum[status]
@@ -87,8 +93,15 @@ def get_orders_by_user(user_id, status=None):
             pass
     return query.order_by(Order.created_at.desc()).all()
 
+
 def get_order_status_counts(user_id):
-    orders = Order.query.filter_by(user_id=user_id).all()
+    orders = Order.query.join(Payment).filter(
+        Order.user_id == user_id,
+        or_(
+            Payment.method == PaymentMethodEnum.CASH,
+            Payment.status == PaymentStatusEnum.SUCCESS
+        )
+    ).all()
     counts = {
         'ALL': len(orders),
         'PENDING': 0,
@@ -178,8 +191,109 @@ def get_active_order_for_user(user_id):
     return Order.query.join(Payment).filter(
         Order.user_id == user_id,
         Order.status.in_(active_statuses),
-        Payment.status == PaymentStatusEnum.SUCCESS
+        or_(
+            Payment.method == PaymentMethodEnum.CASH,
+            Payment.status == PaymentStatusEnum.SUCCESS
+        )
     ).order_by(Order.id.desc()).first()
+
+
+def update_restaurant_rating(restaurant_id):
+    """Cập nhật lại rating_avg của nhà hàng dựa trên trung bình đánh giá các món ăn"""
+    restaurant = Restaurant.query.get(restaurant_id)
+    if not restaurant:
+        return
+    avg_rating = db.session.query(db.func.avg(Review.rating))\
+        .join(Dish, Review.dish_id == Dish.id)\
+        .filter(Dish.restaurant_id == restaurant_id, Review.is_active == True).scalar()
+    restaurant.rating_avg = round(float(avg_rating), 1) if avg_rating is not None else 0.0
+    db.session.commit()
+
+
+def save_or_update_dish_review(user_id, order_id, dish_id, rating, comment=None):
+    """Lưu đánh giá món ăn khi đơn hàng đã COMPLETED. Mỗi món trong 1 đơn chỉ được đánh giá đúng 1 lần duy nhất!"""
+    order = Order.query.filter_by(id=order_id, user_id=user_id).first()
+    if not order:
+        return None, "Không tìm thấy thông tin đơn hàng này!"
+
+    if order.status != OrderStatusEnum.COMPLETED:
+        return None, "Chỉ có thể đánh giá khi đơn hàng đã giao thành công (Hoàn thành)!"
+
+    item_in_order = any(item.dish_id == dish_id for item in order.items)
+    if not item_in_order:
+        return None, "Món ăn này không thuộc danh sách món của đơn hàng!"
+
+    dish = Dish.query.get(dish_id)
+    if not dish:
+        return None, "Món ăn không tồn tại hoặc đã bị xóa!"
+
+    try:
+        rating = int(rating)
+        if rating < 1 or rating > 5:
+            return None, "Số sao đánh giá phải từ 1 đến 5 sao!"
+    except (ValueError, TypeError):
+        return None, "Số sao đánh giá không hợp lệ!"
+
+    existing_review = Review.query.filter_by(user_id=user_id, order_id=order_id, dish_id=dish_id).first()
+    if existing_review:
+        return None, "Bạn đã gửi đánh giá cho món ăn này trong đơn hàng rồi! Mỗi món chỉ được đánh giá 1 lần duy nhất."
+
+    clean_comment = comment.strip() if comment else None
+    sentiment = round((rating - 1) / 4.0, 2)
+
+    review = Review(
+        user_id=user_id,
+        order_id=order_id,
+        dish_id=dish_id,
+        rating=rating,
+        comment=clean_comment,
+        sentiment_score=sentiment
+    )
+    db.session.add(review)
+    db.session.commit()
+
+    update_restaurant_rating(dish.restaurant_id)
+
+    return review, None
+
+
+def get_reviews_by_order(order_id):
+    """Lấy danh sách đánh giá theo dish_id trong một đơn hàng"""
+    reviews = Review.query.filter_by(order_id=order_id, is_active=True).all()
+    return {r.dish_id: r for r in reviews}
+
+
+def get_dish_reviews(dish_id, limit=30):
+    """Lấy danh sách các đánh giá của một món ăn kèm thông tin người dùng"""
+    return Review.query.filter_by(dish_id=dish_id, is_active=True)\
+        .order_by(Review.created_at.desc())\
+        .limit(limit)\
+        .all()
+
+
+def get_restaurant_reviews(restaurant_id, limit=50):
+    """Lấy danh sách các đánh giá của khách hàng về tất cả các món thuộc nhà hàng"""
+    return Review.query.join(Dish, Review.dish_id == Dish.id)\
+        .filter(Dish.restaurant_id == restaurant_id, Review.is_active == True)\
+        .order_by(Review.created_at.desc())\
+        .limit(limit)\
+        .all()
+
+
+def get_restaurant_review_stats(restaurant_id):
+    """Lấy thống kê đánh giá của nhà hàng: điểm trung bình và tổng số lượt đánh giá"""
+    avg_rating = db.session.query(func.avg(Review.rating))\
+        .join(Dish, Review.dish_id == Dish.id)\
+        .filter(Dish.restaurant_id == restaurant_id, Review.is_active == True).scalar()
+    total_reviews = db.session.query(func.count(Review.id))\
+        .join(Dish, Review.dish_id == Dish.id)\
+        .filter(Dish.restaurant_id == restaurant_id, Review.is_active == True).scalar()
+
+    return {
+        'avg_rating': round(float(avg_rating), 1) if avg_rating is not None else 0.0,
+        'total_reviews': total_reviews or 0
+    }
+
 
 
 

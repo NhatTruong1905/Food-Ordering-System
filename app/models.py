@@ -100,6 +100,17 @@ class Dish(BaseModel):
 
     reviews = db.relationship('Review', backref='dish', lazy=True)
 
+    @property
+    def rating_avg(self):
+        active_reviews = [r for r in self.reviews if r.is_active]
+        if not active_reviews:
+            return 0.0
+        return round(sum(r.rating for r in active_reviews) / len(active_reviews), 1)
+
+    @property
+    def review_count(self):
+        return len([r for r in self.reviews if r.is_active])
+
 
 class Cart(BaseModel):
     __tablename__ = 'carts'
@@ -128,6 +139,7 @@ class Order(BaseModel):
 
     items = db.relationship('OrderItem', backref='order', lazy='joined', cascade="all, delete-orphan")
     payment = db.relationship('Payment', backref='order', uselist=False, lazy=True)
+    reviews = db.relationship('Review', backref='order', lazy=True)
 
 
 class OrderItem(BaseModel):
@@ -167,6 +179,10 @@ class Review(BaseModel):
     __table_args__ = (
         db.CheckConstraint('rating >= 1 AND rating <= 5', name='check_rating_range'),
     )
+
+    @property
+    def user(self):
+        return self.author
 
 
 def seed_data():
@@ -901,8 +917,53 @@ def seed_data():
         comment="Pizza 4 phô mai ăn cùng mật ong cực kỳ xuất sắc, vỏ bánh thơm mùi củi!",
         sentiment_score=0.98
     )
-
     db.session.add_all([order_item1, payment1, review1])
+
+    order_an2 = Order(
+        user_id=customer_an.id,
+        restaurant_id=created_restaurants[0].id,
+        total_amount=Decimal("290000.00"),
+        status=OrderStatusEnum.COMPLETED,
+        delivery_address="123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM"
+    )
+    db.session.add(order_an2)
+    db.session.flush()
+
+    item_an2_1 = OrderItem(order_id=order_an2.id, dish_id=dishes[0].id, quantity=1, price_at_purchase=Decimal("125000.00"))
+    item_an2_2 = OrderItem(order_id=order_an2.id, dish_id=dishes[1].id, quantity=1, price_at_purchase=Decimal("165000.00"))
+    pay_an2 = Payment(order_id=order_an2.id, amount=Decimal("290000.00"), method=PaymentMethodEnum.CASH, status=PaymentStatusEnum.SUCCESS)
+    db.session.add_all([item_an2_1, item_an2_2, pay_an2])
+
+    order_binh1 = Order(
+        user_id=customer_binh.id,
+        restaurant_id=created_restaurants[0].id,
+        total_amount=Decimal("335000.00"),
+        status=OrderStatusEnum.COMPLETED,
+        delivery_address="45 Trương Định, Phường 6, Quận 3, TP.HCM"
+    )
+    db.session.add(order_binh1)
+    db.session.flush()
+
+    item_b1 = OrderItem(order_id=order_binh1.id, dish_id=dishes[2].id, quantity=1, price_at_purchase=Decimal("185000.00"))
+    item_b2 = OrderItem(order_id=order_binh1.id, dish_id=dishes[3].id, quantity=2, price_at_purchase=Decimal("75000.00"))
+    pay_b1 = Payment(order_id=order_binh1.id, amount=Decimal("335000.00"), method=PaymentMethodEnum.VNPAY, status=PaymentStatusEnum.SUCCESS, transaction_id="VNPAY_TEST_001")
+    db.session.add_all([item_b1, item_b2, pay_b1])
+
+    order_chi1 = Order(
+        user_id=customer_chi.id,
+        restaurant_id=created_restaurants[2].id,
+        total_amount=Decimal("565000.00"),
+        status=OrderStatusEnum.COMPLETED,
+        delivery_address="78 Nam Kỳ Khởi Nghĩa, Phường 7, Quận 3, TP.HCM"
+    )
+    db.session.add(order_chi1)
+    db.session.flush()
+
+    item_c1 = OrderItem(order_id=order_chi1.id, dish_id=dishes[8].id, quantity=1, price_at_purchase=Decimal("320000.00"))
+    item_c2 = OrderItem(order_id=order_chi1.id, dish_id=dishes[9].id, quantity=1, price_at_purchase=Decimal("245000.00"))
+    pay_c1 = Payment(order_id=order_chi1.id, amount=Decimal("565000.00"), method=PaymentMethodEnum.VNPAY, status=PaymentStatusEnum.SUCCESS, transaction_id="VNPAY_TEST_002")
+    db.session.add_all([item_c1, item_c2, pay_c1])
+
     db.session.commit()
 
 

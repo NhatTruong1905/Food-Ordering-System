@@ -127,7 +127,7 @@ function payRestaurant(restaurantId, restaurantName, totalAmount) {
         addrInput.value = userAddr;
     }
 
-    selectPaymentMethod('CASH');
+    resetPaymentMethodSelection();
     modal.style.display = 'flex';
 }
 
@@ -139,17 +139,34 @@ function closeCheckoutModal() {
     currentCheckoutRestaurantId = null;
 }
 
+function resetPaymentMethodSelection() {
+    const cashRadio = document.querySelector('input[name="checkout_payment_method"][value="CASH"]');
+    const vnpayRadio = document.querySelector('input[name="checkout_payment_method"][value="VNPAY"]');
+    const cardCash = document.getElementById('card-method-CASH');
+    const cardVnpay = document.getElementById('card-method-VNPAY');
+    const errEl = document.getElementById('paymentMethodError');
+
+    if (cashRadio) cashRadio.checked = false;
+    if (vnpayRadio) vnpayRadio.checked = false;
+    if (cardCash) cardCash.classList.remove('active');
+    if (cardVnpay) cardVnpay.classList.remove('active');
+    if (errEl) errEl.style.display = 'none';
+}
+
 function selectPaymentMethod(method) {
     const cashRadio = document.querySelector('input[name="checkout_payment_method"][value="CASH"]');
     const vnpayRadio = document.querySelector('input[name="checkout_payment_method"][value="VNPAY"]');
     const cardCash = document.getElementById('card-method-CASH');
     const cardVnpay = document.getElementById('card-method-VNPAY');
+    const errEl = document.getElementById('paymentMethodError');
+
+    if (errEl) errEl.style.display = 'none';
 
     if (method === 'VNPAY') {
         if (vnpayRadio) vnpayRadio.checked = true;
         if (cardVnpay) cardVnpay.classList.add('active');
         if (cardCash) cardCash.classList.remove('active');
-    } else {
+    } else if (method === 'CASH') {
         if (cashRadio) cashRadio.checked = true;
         if (cardCash) cardCash.classList.add('active');
         if (cardVnpay) cardVnpay.classList.remove('active');
@@ -169,7 +186,13 @@ function submitCheckoutModal() {
     }
 
     const selectedRadio = document.querySelector('input[name="checkout_payment_method"]:checked');
-    const paymentMethod = selectedRadio ? selectedRadio.value : 'CASH';
+    if (!selectedRadio || !selectedRadio.value) {
+        const errEl = document.getElementById('paymentMethodError');
+        if (errEl) errEl.style.display = 'block';
+        alert("Vui lòng chọn 1 trong 2 phương thức thanh toán: Tiền mặt (COD) hoặc Cổng VNPAY trước khi xác nhận đặt hàng!");
+        return;
+    }
+    const paymentMethod = selectedRadio.value;
 
     const btn = document.getElementById('btnConfirmCheckout');
     if (btn) {
@@ -206,6 +229,11 @@ function submitCheckoutModal() {
         const resId = currentCheckoutRestaurantId;
         closeCheckoutModal();
 
+        if (data.payment_method === 'VNPAY' && data.payment_url) {
+            openVNPayModal(data.order_id, data.total_amount, data.payment_url);
+            return;
+        }
+
         if (resId) {
             const resCard = document.getElementById(`cart-res-${resId}`);
             if (resCard) resCard.remove();
@@ -227,12 +255,8 @@ function submitCheckoutModal() {
             if (emptyMsg) emptyMsg.style.display = 'block';
         }
 
-        if (data.payment_method === 'VNPAY' && data.payment_url) {
-            openVNPayModal(data.order_id, data.total_amount, data.payment_url);
-            return;
-        }
-
         alert(data.message || `Đặt hàng thành công! Mã đơn hàng: #${data.order_id}`);
+        window.location.href = '/orders';
     })
     .catch(err => {
         if (btn) {
@@ -419,6 +443,23 @@ function closeVNPayModal() {
     const modal = document.getElementById('vnpayPaymentModalBackdrop');
     if (modal) modal.style.display = 'none';
     document.body.style.overflow = '';
+}
+
+function cancelUnpaidVNPayOrder() {
+    if (!currentVNPayOrderId) {
+        closeVNPayModal();
+        return;
+    }
+
+    if (confirm("Bạn có chắc muốn hủy phiên thanh toán VNPAY không?\n\n• Món ăn vẫn được GIỮ NGUYÊN trong giỏ hàng của bạn.\n• Đơn hàng chưa thanh toán này sẽ KHÔNG lưu vào lịch sử đơn hàng.")) {
+        fetch(`/api/orders/${currentVNPayOrderId}/cancel`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        }).finally(() => {
+            closeVNPayModal();
+            window.location.reload();
+        });
+    }
 }
 
 function copyPaymentText(text, btnElement) {
