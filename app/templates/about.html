@@ -478,7 +478,17 @@
                             <i class="fa-solid fa-clock-rotate-left"></i>
                             <span>Lịch sử đơn hàng</span>
                         </a>
+                        {% if current_user.role.value == 'ADMIN' %}
+                        <a href="/admin" class="dropdown-item">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <span>Trang quản trị</span>
+                        </a>
+                        {% endif %}
                         {% if current_user.role.value == 'RESTAURANT' %}
+                        <a href="/admin" class="dropdown-item">
+                            <i class="fa-solid fa-store"></i>
+                            <span>Trang quản trị</span>
+                        </a>
                         <a href="/restaurant/dashboard" class="dropdown-item">
                             <i class="fa-solid fa-gauge-high"></i>
                             <span>Quản lý nhà hàng</span>
@@ -789,8 +799,10 @@
 </a>
 
 {% include 'chat_widget.html' %}
+{% include 'ai_chat_widget.html' %}
 
 <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
 <script src="{{ url_for('static', filename='js/nav.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ai_chat.js') }}"></script>
 </body>
 </html>
