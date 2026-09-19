@@ -45,6 +45,10 @@
                             <i class="fa-solid fa-clock-rotate-left"></i>
                             <span>Lịch sử đơn hàng</span>
                         </a>
+                        <a href="/admin" class="dropdown-item">
+                            <i class="fa-solid fa-store"></i>
+                            <span>Trang quản trị</span>
+                        </a>
                         <a href="/restaurant/dashboard" class="dropdown-item">
                             <i class="fa-solid fa-gauge-high"></i>
                             <span>Quản lý nhà hàng</span>
@@ -120,16 +124,18 @@
                             </td>
                             <td style="padding: 14px 12px; display: flex; align-items: center; gap: 8px;">
                                 <select onchange="updateStatus({{ o.id }}, this.value)" style="padding: 8px 12px; border: 1px solid #d4c5a9; border-radius: 6px; background: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; outline: none;">
-                                    <option value="PENDING" {% if o.status.name == 'PENDING' %}selected{% endif %}>🕒 Chờ xác nhận</option>
-                                    <option value="CONFIRMED" {% if o.status.name == 'CONFIRMED' %}selected{% endif %}>✔️ Đã xác nhận</option>
-                                    <option value="PREPARING" {% if o.status.name == 'PREPARING' %}selected{% endif %}>🍳 Đang chuẩn bị</option>
-                                    <option value="DELIVERING" {% if o.status.name == 'DELIVERING' %}selected{% endif %}>🛵 Đang giao hàng</option>
-                                    <option value="COMPLETED" {% if o.status.name == 'COMPLETED' %}selected{% endif %}>✅ Hoàn thành</option>
-                                    <option value="CANCELLED" {% if o.status.name == 'CANCELLED' %}selected{% endif %}>❌ Đã Hủy</option>
+                                    <option value="PENDING" {% if o.status.name == 'PENDING' %}selected{% endif %}>Chờ xác nhận</option>
+                                    <option value="CONFIRMED" {% if o.status.name == 'CONFIRMED' %}selected{% endif %}>Đã xác nhận</option>
+                                    <option value="PREPARING" {% if o.status.name == 'PREPARING' %}selected{% endif %}>Đang chuẩn bị</option>
+                                    <option value="DELIVERING" {% if o.status.name == 'DELIVERING' %}selected{% endif %}>Đang giao hàng</option>
+                                    <option value="COMPLETED" {% if o.status.name == 'COMPLETED' %}selected{% endif %}>Hoàn thành</option>
+                                    <option value="CANCELLED" {% if o.status.name == 'CANCELLED' %}selected{% endif %}>Đã Hủy</option>
                                 </select>
-                                <button type="button" onclick="openChatWithOrder({{ o.id }}, 'Khách hàng (Đơn #{{ o.id }})', '')" style="padding: 8px 12px; background: #1a4224; color: #ffffff; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;" title="Nhắn tin với khách hàng" aria-label="Nhắn tin với khách hàng">
+                                {% if o.status.name not in ['COMPLETED', 'CANCELLED'] %}
+                                <button type="button" class="btn-order-chat-{{ o.id }}" onclick="openChatWithOrder({{ o.id }}, 'Khách hàng (Đơn #{{ o.id }})', '')" style="padding: 8px 12px; background: #1a4224; color: #ffffff; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;" title="Nhắn tin với khách hàng" aria-label="Nhắn tin với khách hàng">
                                     <i class="fa-solid fa-comments"></i> Chat
                                 </button>
+                                {% endif %}
                             </td>
                         </tr>
                         {% else %}
@@ -212,7 +218,6 @@
         </div>
     </main>
 
-    <!-- Modal Thêm Món Mới -->
     <div id="addDishModal" class="checkout-modal-backdrop" style="display: none; z-index: 10000; justify-content: center; align-items: center; background: rgba(0,0,0,0.6);">
         <div class="checkout-modal-dialog" style="max-width: 550px; background: #fff; border-radius: 12px; overflow: hidden; width: 100%;">
             <div class="checkout-modal-header" style="background: #faf6ea; padding: 16px 20px; border-bottom: 2px solid #ecd8ba; display: flex; justify-content: space-between; align-items: center;">
@@ -284,7 +289,13 @@ function updateStatus(orderId, newStatus) {
         if(data.error) {
             alert("Lỗi: " + data.error);
         } else {
-            alert("Thành công: " + data.message);
+            if (newStatus === 'COMPLETED' || newStatus === 'CANCELLED') {
+                const btn = document.querySelector(`.btn-order-chat-${orderId}`) || document.querySelector(`button[onclick*="openChatWithOrder(${orderId},"]`);
+                if (btn) btn.remove();
+                if (typeof activeChatOrderId !== 'undefined' && activeChatOrderId === orderId && typeof closeChatWidget === 'function') {
+                    closeChatWidget();
+                }
+            }
         }
     })
     .catch(err => {
@@ -293,7 +304,15 @@ function updateStatus(orderId, newStatus) {
     });
 }
 </script>
+<div id="toastChatContainer" class="toast-chat-container"></div>
 {% include 'chat_widget.html' %}
 <script src="{{ url_for('static', filename='js/nav.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof initRestaurantNotifications === 'function') {
+        initRestaurantNotifications();
+    }
+});
+</script>
 </body>
 </html>

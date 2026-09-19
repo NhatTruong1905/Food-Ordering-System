@@ -222,6 +222,13 @@
                         <div class="dropdown-divider"></div>
                         <a href="/profile" class="dropdown-item"><i class="fa-solid fa-id-card"></i> <span>Hồ sơ cá nhân</span></a>
                         <a href="/orders" class="dropdown-item"><i class="fa-solid fa-clock-rotate-left"></i> <span>Lịch sử đơn hàng</span></a>
+                        {% if current_user.role.value == 'ADMIN' %}
+                        <a href="/admin" class="dropdown-item"><i class="fa-solid fa-shield-halved"></i> <span>Trang quản trị</span></a>
+                        {% endif %}
+                        {% if current_user.role.value == 'RESTAURANT' %}
+                        <a href="/admin" class="dropdown-item"><i class="fa-solid fa-store"></i> <span>Trang quản trị</span></a>
+                        <a href="/restaurant/dashboard" class="dropdown-item"><i class="fa-solid fa-gauge-high"></i> <span>Quản lý nhà hàng</span></a>
+                        {% endif %}
                         <a href="/cart" class="dropdown-item"><i class="fa-solid fa-basket-shopping"></i> <span>Giỏ hàng của tôi</span></a>
                     </div>
                 </div>

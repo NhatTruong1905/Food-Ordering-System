@@ -200,7 +200,6 @@ def get_active_order_for_user(user_id):
 
 
 def update_restaurant_rating(restaurant_id):
-    """Cập nhật lại rating_avg của nhà hàng dựa trên trung bình đánh giá các món ăn"""
     restaurant = Restaurant.query.get(restaurant_id)
     if not restaurant:
         return
@@ -212,7 +211,6 @@ def update_restaurant_rating(restaurant_id):
 
 
 def save_or_update_dish_review(user_id, order_id, dish_id, rating, comment=None):
-    """Lưu đánh giá món ăn khi đơn hàng đã COMPLETED. Mỗi món trong 1 đơn chỉ được đánh giá đúng 1 lần duy nhất!"""
     order = Order.query.filter_by(id=order_id, user_id=user_id).first()
     if not order:
         return None, "Không tìm thấy thông tin đơn hàng này!"
@@ -259,13 +257,11 @@ def save_or_update_dish_review(user_id, order_id, dish_id, rating, comment=None)
 
 
 def get_reviews_by_order(order_id):
-    """Lấy danh sách đánh giá theo dish_id trong một đơn hàng"""
     reviews = Review.query.filter_by(order_id=order_id, is_active=True).all()
     return {r.dish_id: r for r in reviews}
 
 
 def get_dish_reviews(dish_id, limit=30):
-    """Lấy danh sách các đánh giá của một món ăn kèm thông tin người dùng"""
     return Review.query.filter_by(dish_id=dish_id, is_active=True)\
         .order_by(Review.created_at.desc())\
         .limit(limit)\
@@ -273,7 +269,6 @@ def get_dish_reviews(dish_id, limit=30):
 
 
 def get_restaurant_reviews(restaurant_id, limit=50):
-    """Lấy danh sách các đánh giá của khách hàng về tất cả các món thuộc nhà hàng"""
     return Review.query.join(Dish, Review.dish_id == Dish.id)\
         .filter(Dish.restaurant_id == restaurant_id, Review.is_active == True)\
         .order_by(Review.created_at.desc())\
@@ -282,7 +277,6 @@ def get_restaurant_reviews(restaurant_id, limit=50):
 
 
 def get_restaurant_review_stats(restaurant_id):
-    """Lấy thống kê đánh giá của nhà hàng: điểm trung bình và tổng số lượt đánh giá"""
     avg_rating = db.session.query(func.avg(Review.rating))\
         .join(Dish, Review.dish_id == Dish.id)\
         .filter(Dish.restaurant_id == restaurant_id, Review.is_active == True).scalar()

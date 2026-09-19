@@ -53,7 +53,17 @@
                             <i class="fa-solid fa-clock-rotate-left"></i>
                             <span>Lịch sử đơn hàng</span>
                         </a>
+                        {% if current_user.role.value == 'ADMIN' %}
+                        <a href="/admin" class="dropdown-item">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <span>Trang quản trị</span>
+                        </a>
+                        {% endif %}
                         {% if current_user.role.value == 'RESTAURANT' %}
+                        <a href="/admin" class="dropdown-item">
+                            <i class="fa-solid fa-store"></i>
+                            <span>Trang quản trị</span>
+                        </a>
                         <a href="/restaurant/dashboard" class="dropdown-item">
                             <i class="fa-solid fa-gauge-high"></i>
                             <span>Quản lý nhà hàng</span>
@@ -346,8 +356,8 @@
                                     </button>
                                 {% endif %}
 
-                                {% if order.status.value != 'CANCELLED' %}
-                                    <button type="button" class="btn-chat-restaurant" onclick="openChatWithOrder({{ order.id }}, '{{ (order.restaurant.name if order.restaurant else 'Nhà hàng')|replace('\'', '\\\'') }}', '{{ order.restaurant.image_url if order.restaurant and order.restaurant.image_url else '' }}')" style="background: #1a4224; color: #ffffff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                                {% if order.status.value not in ['COMPLETED', 'CANCELLED'] %}
+                                    <button type="button" class="btn-order-chat-{{ order.id }} btn-chat-restaurant" onclick="openChatWithOrder({{ order.id }}, '{{ (order.restaurant.name if order.restaurant else 'Nhà hàng')|replace('\'', '\\\'') }}', '{{ order.restaurant.image_url if order.restaurant and order.restaurant.image_url else '' }}')" style="background: #1a4224; color: #ffffff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
                                         <i class="fa-solid fa-comments"></i> Chat với chủ nhà hàng
                                     </button>
                                 {% endif %}
@@ -1041,6 +1051,14 @@ document.addEventListener('keydown', function (e) {
 </script>
 
 {% include 'chat_widget.html' %}
+<div id="toastChatContainer" class="toast-chat-container"></div>
 <script src="{{ url_for('static', filename='js/nav.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof initCustomerOrdersWebSocket === 'function') {
+        initCustomerOrdersWebSocket();
+    }
+});
+</script>
 </body>
 </html>

@@ -4,16 +4,17 @@ import hashlib
 import json
 import threading
 import urllib.parse
+import urllib.request
 from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
-from flask import render_template, request, jsonify, session, redirect, flash
+from flask import render_template, request, jsonify, session, redirect, flash, Response, stream_with_context
 from sqlalchemy import or_
 from app import app, dao, login, db, sock
 from flask_login import login_user, logout_user, current_user, login_required
 from app.utils import get_cart_stats, get_res_total
 from app.models import Order, OrderItem, Payment, OrderStatusEnum, PaymentMethodEnum, PaymentStatusEnum, RoleEnum, \
-    Restaurant, Dish, Review
+    Restaurant, Dish, Review, User
 from app.vnpay import build_vnpay_payment_url, verify_vnpay_response, get_vnpay_response_message
 
 
@@ -557,7 +558,6 @@ def delete_cart(restaurant_id, dish_id):
 
 
 def remove_restaurant_from_cart(restaurant_id):
-    """Xóa các món của một nhà hàng khỏi session cart khi đã thanh toán thành công"""
     try:
         cart = session.get('cart', {})
         res_id_str = str(restaurant_id)
@@ -779,6 +779,33 @@ def update_order_status(order_id):
         new_status = OrderStatusEnum[new_status_str]
         order.status = new_status
         db.session.commit()
+
+        if new_status in [OrderStatusEnum.COMPLETED, OrderStatusEnum.CANCELLED]:
+            with chat_rooms_lock:
+                room_sockets = list(active_chat_rooms.get(order.id, []))
+                active_chat_rooms.pop(order.id, None)
+            for s in room_sockets:
+                try:
+                    s.close()
+                except Exception:
+                    pass
+
+        status_event = json.dumps({
+            "type": "order_status_updated",
+            "order_id": order.id,
+            "status": new_status.name,
+            "status_label": new_status.value
+        })
+
+        with customer_order_lock:
+            target_sockets = list(customer_order_sockets.get(order.user_id, []))
+        for s in target_sockets:
+            try:
+                s.send(status_event)
+            except Exception:
+                with customer_order_lock:
+                    customer_order_sockets[order.user_id].discard(s)
+
         return jsonify(
             {"status": "success", "message": f"Đã cập nhật trạng thái đơn #{order.id} thành {new_status.value}"}), 200
     except KeyError:
@@ -1044,6 +1071,76 @@ def get_active_chat_order():
 
 chat_rooms_lock = threading.Lock()
 active_chat_rooms = defaultdict(set)
+restaurant_notification_lock = threading.Lock()
+restaurant_notification_sockets = defaultdict(set)
+customer_order_lock = threading.Lock()
+customer_order_sockets = defaultdict(set)
+
+
+@sock.route('/ws/customer/orders')
+def customer_orders_socket(ws):
+    uid = current_user.id if current_user.is_authenticated else None
+    if uid:
+        with customer_order_lock:
+            customer_order_sockets[uid].add(ws)
+
+    try:
+        while True:
+            raw_data = ws.receive()
+            if raw_data is None:
+                break
+            try:
+                payload = json.loads(raw_data)
+                client_uid = payload.get('user_id')
+                if client_uid:
+                    client_uid = int(client_uid)
+                    if client_uid != uid:
+                        with customer_order_lock:
+                            if uid:
+                                customer_order_sockets[uid].discard(ws)
+                            uid = client_uid
+                            customer_order_sockets[uid].add(ws)
+            except Exception:
+                pass
+    finally:
+        if uid:
+            with customer_order_lock:
+                customer_order_sockets[uid].discard(ws)
+                if not customer_order_sockets[uid]:
+                    customer_order_sockets.pop(uid, None)
+
+
+@sock.route('/ws/restaurant/notifications')
+def restaurant_notifications_socket(ws):
+    uid = current_user.id if (current_user.is_authenticated and current_user.role in [RoleEnum.RESTAURANT, RoleEnum.ADMIN]) else None
+    if uid:
+        with restaurant_notification_lock:
+            restaurant_notification_sockets[uid].add(ws)
+
+    try:
+        while True:
+            raw_data = ws.receive()
+            if raw_data is None:
+                break
+            try:
+                payload = json.loads(raw_data)
+                client_uid = payload.get('user_id')
+                if client_uid:
+                    client_uid = int(client_uid)
+                    if client_uid != uid:
+                        with restaurant_notification_lock:
+                            if uid:
+                                restaurant_notification_sockets[uid].discard(ws)
+                            uid = client_uid
+                            restaurant_notification_sockets[uid].add(ws)
+            except Exception:
+                pass
+    finally:
+        if uid:
+            with restaurant_notification_lock:
+                restaurant_notification_sockets[uid].discard(ws)
+                if not restaurant_notification_sockets[uid]:
+                    restaurant_notification_sockets.pop(uid, None)
 
 
 @sock.route('/ws/chat/<int:order_id>')
@@ -1053,7 +1150,7 @@ def chat_socket(ws, order_id):
         return
 
     order = Order.query.get(order_id)
-    if not order:
+    if not order or order.status in [OrderStatusEnum.COMPLETED, OrderStatusEnum.CANCELLED]:
         ws.close()
         return
 
@@ -1083,12 +1180,40 @@ def chat_socket(ws, order_id):
             if not text:
                 continue
 
+            sender_role = payload.get('sender_role')
+            client_sender_id = payload.get('sender_id')
+
+            customer_user = User.query.get(order.user_id) if order.user_id else None
+            customer_name = customer_user.username if customer_user else "Khách hàng"
+
+            if sender_role == 'RESTAURANT':
+                is_restaurant = True
+                sender_id = order.restaurant.owner_id
+                sender_name = order.restaurant.name
+            elif sender_role == 'CUSTOMER':
+                is_restaurant = False
+                sender_id = order.user_id
+                sender_name = customer_name
+            else:
+                if client_sender_id and int(client_sender_id) == order.restaurant.owner_id:
+                    is_restaurant = True
+                    sender_id = order.restaurant.owner_id
+                    sender_name = order.restaurant.name
+                elif client_sender_id and int(client_sender_id) == order.user_id:
+                    is_restaurant = False
+                    sender_id = order.user_id
+                    sender_name = customer_name
+                else:
+                    is_restaurant = (current_user.id == order.restaurant.owner_id)
+                    sender_id = current_user.id
+                    sender_name = order.restaurant.name if is_restaurant else current_user.username
+
             msg_payload = {
                 "id": int(datetime.now().timestamp() * 1000),
                 "order_id": order_id,
-                "sender_id": current_user.id,
-                "sender_name": current_user.username,
-                "is_restaurant": (current_user.id == order.restaurant.owner_id),
+                "sender_id": sender_id,
+                "sender_name": sender_name,
+                "is_restaurant": is_restaurant,
                 "message": text,
                 "created_at": datetime.now().strftime('%H:%M')
             }
@@ -1104,8 +1229,120 @@ def chat_socket(ws, order_id):
                 except Exception:
                     with chat_rooms_lock:
                         active_chat_rooms[order_id].discard(client_ws)
+
+            if msg_payload["is_restaurant"]:
+                if order.user_id:
+                    user_id = order.user_id
+                    notif_payload = json.dumps({
+                        "id": msg_payload["id"],
+                        "type": "new_chat_message",
+                        "order_id": order_id,
+                        "sender_id": sender_id,
+                        "sender_name": order.restaurant.name,
+                        "customer_name": customer_name,
+                        "restaurant_name": order.restaurant.name,
+                        "restaurant_image": order.restaurant.image_url if order.restaurant else "",
+                        "message": text,
+                        "is_restaurant": True,
+                        "created_at": msg_payload["created_at"]
+                    })
+                    with customer_order_lock:
+                        target_sockets = list(customer_order_sockets.get(user_id, []))
+                    for s in target_sockets:
+                        try:
+                            s.send(notif_payload)
+                        except Exception:
+                            with customer_order_lock:
+                                customer_order_sockets[user_id].discard(s)
+            else:
+                if order.restaurant and order.restaurant.owner_id:
+                    owner_id = order.restaurant.owner_id
+                    notif_payload = json.dumps({
+                        "id": msg_payload["id"],
+                        "type": "new_chat_message",
+                        "order_id": order_id,
+                        "sender_id": sender_id,
+                        "sender_name": sender_name,
+                        "customer_name": sender_name,
+                        "restaurant_name": order.restaurant.name,
+                        "restaurant_image": order.restaurant.image_url if order.restaurant else "",
+                        "message": text,
+                        "is_restaurant": False,
+                        "created_at": msg_payload["created_at"]
+                    })
+                    with restaurant_notification_lock:
+                        target_sockets = list(restaurant_notification_sockets.get(owner_id, []))
+                    for s in target_sockets:
+                        try:
+                            s.send(notif_payload)
+                        except Exception:
+                            with restaurant_notification_lock:
+                                restaurant_notification_sockets[owner_id].discard(s)
     finally:
         with chat_rooms_lock:
             active_chat_rooms[order_id].discard(ws)
             if not active_chat_rooms[order_id]:
                 active_chat_rooms.pop(order_id, None)
+
+
+RAG_API_BASE = os.getenv("RAG_API_BASE", "http://127.0.0.1:8000")
+
+
+@app.route('/api/ai-chat/status', methods=['GET'])
+def ai_chat_status():
+    try:
+        req = urllib.request.Request(f"{RAG_API_BASE}/openapi.json", method="GET")
+        with urllib.request.urlopen(req, timeout=1.5) as resp:
+            if resp.status == 200:
+                return jsonify({"status": "online", "rag_url": RAG_API_BASE})
+    except Exception as e:
+        return jsonify({"status": "offline", "error": str(e), "rag_url": RAG_API_BASE}), 200
+    return jsonify({"status": "offline", "rag_url": RAG_API_BASE}), 200
+
+
+@app.route('/api/ai-chat/stream', methods=['POST'])
+def ai_chat_stream():
+    data = request.get_json(silent=True) or {}
+    query_text = (data.get('query') or request.form.get('query') or '').strip()
+    top_k = int(data.get('top_k', 3))
+
+    if not query_text:
+        return jsonify({"error": "Vui lòng nhập câu hỏi cần tư vấn món ăn"}), 400
+
+    def generate():
+        target_url = f"{RAG_API_BASE}/query/stream"
+        payload = json.dumps({"query": query_text, "top_k": top_k, "sse": False}).encode('utf-8')
+        req = urllib.request.Request(
+            target_url,
+            data=payload,
+            headers={"Content-Type": "application/json", "Accept": "text/plain"},
+            method="POST"
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=45) as resp:
+                while True:
+                    chunk = resp.read1(1024) if hasattr(resp, 'read1') else resp.read(32)
+                    if not chunk:
+                        break
+                    yield chunk.decode('utf-8', errors='replace')
+        except urllib.error.URLError:
+            msg = (
+                "⚠️ Dạ hiện tại em chưa thể kết nối trực tiếp tới máy chủ AI (RAG Server cổng 8000).\n\n"
+                "👉 Anh/chị hoặc Quản trị viên vui lòng chạy lệnh sau trên terminal để khởi động AI Server:\n"
+                "```bash\n"
+                "python RAG-Food-Ordering-System/api/main.py\n"
+                "```\n"
+                "Sau khi server khởi động xong, anh/chị nhấn gửi lại câu hỏi là được ngay ạ! ✨"
+            )
+            yield msg
+        except Exception as ex:
+            yield f"⚠️ Đã có lỗi xảy ra khi xử lý phản hồi từ AI: {str(ex)}"
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/plain; charset=utf-8",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"
+        }
+    )

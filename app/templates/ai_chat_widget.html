@@ -1,0 +1,101 @@
+<button type="button" class="floating-ai-btn" id="floatingAiBtn" onclick="toggleAiChat()" title="Gợi ý món ăn thông minh với AI" aria-label="Gợi ý món ăn thông minh với AI">
+    <div class="floating-ai-btn-inner">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+    </div>
+    <span class="floating-ai-badge">AI</span>
+    <span class="floating-ai-tooltip">✨ AI Gợi ý món ngon</span>
+</button>
+
+<div class="floating-ai-chat-widget" id="floatingAiChatWidget" aria-hidden="true">
+    <div class="ai-chat-header">
+        <div class="ai-chat-header-info">
+            <div class="ai-chat-avatar">
+                <i class="fa-solid fa-robot"></i>
+                <span class="ai-status-indicator" id="aiStatusDot" title="Trạng thái kết nối"></span>
+            </div>
+            <div>
+                <div class="ai-chat-title">
+                    <span>Food Shoppe AI</span>
+                </div>
+                <div class="ai-chat-subtitle" id="aiStatusText">Trợ lý ẩm thực & gợi ý món ngon</div>
+            </div>
+        </div>
+        <div class="ai-chat-header-actions">
+            <button type="button" class="ai-header-btn" onclick="clearAiChat()" title="Xóa đoạn hội thoại" aria-label="Xóa đoạn hội thoại">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+            <button type="button" class="ai-header-btn" onclick="toggleAiChat()" title="Đóng khung chat" aria-label="Đóng khung chat">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="ai-chat-body" id="aiChatBody">
+        <div class="ai-welcome-box" id="aiWelcomeBox">
+            <div class="ai-welcome-badge">
+                <i class="fa-solid fa-sparkles"></i> AI Concierge
+            </div>
+            <h4>Xin chào! 👋</h4>
+            <p>Em là trợ lý ẩm thực AI của <strong>Food Shoppe</strong>. Em có thể gợi ý món ngon, tìm quán ăn theo phong cách ẩm thực, mức giá và thực đơn chính xác nhất cho anh/chị!</p>
+            
+            <div class="ai-suggestions-title">
+                <i class="fa-solid fa-lightbulb"></i> Gợi ý câu hỏi nhanh:
+            </div>
+            <div class="ai-suggestions-grid">
+                <button type="button" class="ai-suggestion-chip" onclick="askAiSuggestion('Gợi ý món ăn trưa ngon miệng và hấp dẫn')">
+                    🍲 Món ăn trưa ngon
+                </button>
+                <button type="button" class="ai-suggestion-chip" onclick="askAiSuggestion('Quán pizza nào ngon nhất và món đặc sắc?')">
+                    🍕 Pizza & Món Ý đặc sắc
+                </button>
+                <button type="button" class="ai-suggestion-chip" onclick="askAiSuggestion('Quán nào có Dimsum và ẩm thực Quảng Đông?')">
+                    🥢 Dimsum Quảng Đông
+                </button>
+                <button type="button" class="ai-suggestion-chip" onclick="askAiSuggestion('Gợi ý món ăn thanh đạm, ít calo cho bữa tối')">
+                    🥗 Món ăn thanh đạm
+                </button>
+            </div>
+        </div>
+
+        <div class="ai-messages-list" id="aiMessagesList"></div>
+
+        <div class="ai-typing-row" id="aiTypingIndicator" style="display: none;">
+            <div class="ai-msg-avatar">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <div class="ai-typing-bubble">
+                <div class="ai-typing-dot"></div>
+                <div class="ai-typing-dot"></div>
+                <div class="ai-typing-dot"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ai-chat-footer">
+        <form class="ai-input-form" id="aiInputForm" onsubmit="handleAiSubmit(event)">
+            <input type="text"
+                   class="ai-chat-input"
+                   id="aiChatInput"
+                   placeholder="Hỏi AI món bạn muốn ăn hôm nay..."
+                   autocomplete="off">
+            <button type="button"
+                    class="ai-stop-btn"
+                    id="btnStopAiStream"
+                    onclick="stopAiStream()"
+                    title="Dừng phản hồi"
+                    style="display: none;">
+                <i class="fa-solid fa-stop"></i>
+            </button>
+            <button type="submit"
+                    class="ai-send-btn"
+                    id="btnSendAiChat"
+                    title="Gửi câu hỏi"
+                    aria-label="Gửi">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </form>
+        <div class="ai-footer-note">
+            <span>⚡ LangChain RAG & Gemini • Phản hồi Stream thời gian thực</span>
+        </div>
+    </div>
+</div>
