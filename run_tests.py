@@ -3,7 +3,6 @@ import sys
 import time
 import unittest
 
-# Ensure UTF-8 output on Windows consoles
 if hasattr(sys.stdout, 'buffer'):
     try:
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')

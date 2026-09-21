@@ -42,7 +42,6 @@ class TestDishDAO(BaseTestCase):
         d2 = self.create_dish(self.restaurant, self.cat2, name='Món 2', price=40000, is_active=True)
         d3 = self.create_dish(self.restaurant, self.cat1, name='Món Ẩn', price=50000, is_active=False)
 
-        # Another restaurant's dish
         other_owner = self.create_user(username='other_owner', role=RoleEnum.RESTAURANT)
         other_rest = self.create_restaurant(other_owner, name='Quán Khác')
         self.create_dish(other_rest, self.cat1, name='Món Quán Khác', price=60000)

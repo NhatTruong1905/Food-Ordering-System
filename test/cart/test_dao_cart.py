@@ -25,8 +25,6 @@ class TestCartDAO(BaseTestCase):
             }
         }
         stats = get_cart_stats(cart)
-        # Total qty: 2 + 4 + 3 = 9
-        # Total amount: 2*50000 + 4*5000 + 3*3000 = 100000 + 20000 + 9000 = 129000
         self.assertEqual(stats['total_quantity'], 9)
         self.assertEqual(stats['total_amount'], 129000)
 

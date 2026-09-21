@@ -15,7 +15,6 @@ class TestOrderAPI(BaseTestCase):
     def test_checkout_cash_success(self):
         self.login_as(self.user)
 
-        # Put dish into session cart
         with self.client.session_transaction() as sess:
             sess['cart'] = {
                 str(self.restaurant.id): {
@@ -52,7 +51,6 @@ class TestOrderAPI(BaseTestCase):
     def test_checkout_vnpay_cancels_old_unpaid(self):
         self.login_as(self.user)
 
-        # Create an old unpaid VNPAY order
         old_order = self.create_order(self.user, self.restaurant, status=OrderStatusEnum.PENDING,
                                       payment_method=PaymentMethodEnum.VNPAY, payment_status=PaymentStatusEnum.PENDING)
 
@@ -83,7 +81,6 @@ class TestOrderAPI(BaseTestCase):
         self.assertEqual(data['payment_method'], 'VNPAY')
         self.assertIn('payment_url', data)
 
-        # Verify old unpaid order was automatically marked CANCELLED
         self.assertEqual(old_order.status, OrderStatusEnum.CANCELLED)
 
     def test_cancel_order_api(self):

@@ -66,7 +66,6 @@ class TestRestaurantDAO(BaseTestCase):
         user = self.create_user(username='customer1')
         order = self.create_order(user, rest, status=OrderStatusEnum.COMPLETED)
 
-        # Create two reviews for dish: 4 stars and 5 stars -> avg should be 4.5
         r1 = Review(user_id=user.id, order_id=order.id, dish_id=dish.id, rating=4, comment='Ngon')
         db.session.add(r1)
         db.session.commit()

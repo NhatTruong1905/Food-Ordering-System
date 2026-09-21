@@ -1,1 +1,0 @@
-"""Dish domain tests"""

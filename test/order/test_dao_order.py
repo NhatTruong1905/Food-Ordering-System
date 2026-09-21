@@ -13,11 +13,9 @@ class TestOrderDAO(BaseTestCase):
         self.dish = self.create_dish(self.restaurant, self.category, name='Sườn Chả', price=40000)
 
     def test_get_orders_by_user(self):
-        # Create two cash orders (one PENDING, one COMPLETED)
         o1 = self.create_order(self.user, self.restaurant, status=OrderStatusEnum.PENDING, payment_method=PaymentMethodEnum.CASH)
         o2 = self.create_order(self.user, self.restaurant, status=OrderStatusEnum.COMPLETED, payment_method=PaymentMethodEnum.CASH)
 
-        # Unpaid VNPAY order should NOT appear in customer order list
         self.create_order(self.user, self.restaurant, status=OrderStatusEnum.PENDING,
                           payment_method=PaymentMethodEnum.VNPAY, payment_status=PaymentStatusEnum.PENDING)
 
@@ -41,7 +39,7 @@ class TestOrderDAO(BaseTestCase):
         counts = dao.get_order_status_counts(self.user.id)
         self.assertEqual(counts['ALL'], 4)
         self.assertEqual(counts['PENDING'], 1)
-        self.assertEqual(counts['PREPARING'], 1)  # CONFIRMED maps to PREPARING
+        self.assertEqual(counts['PREPARING'], 1)
         self.assertEqual(counts['DELIVERING'], 1)
         self.assertEqual(counts['COMPLETED'], 1)
 
@@ -53,14 +51,12 @@ class TestOrderDAO(BaseTestCase):
         self.assertEqual(order.status, OrderStatusEnum.CANCELLED)
 
     def test_cancel_order_not_allowed(self):
-        # Order already preparing
         o_prep = self.create_order(self.user, self.restaurant, status=OrderStatusEnum.PREPARING,
                                    payment_method=PaymentMethodEnum.CASH, payment_status=PaymentStatusEnum.PENDING)
         success, msg = dao.cancel_order(o_prep.id, self.user.id)
         self.assertFalse(success)
         self.assertIn("Chỉ có thể hủy", msg)
 
-        # Order already paid
         o_paid = self.create_order(self.user, self.restaurant, status=OrderStatusEnum.PENDING,
                                    payment_method=PaymentMethodEnum.VNPAY, payment_status=PaymentStatusEnum.SUCCESS)
         success_paid, msg_paid = dao.cancel_order(o_paid.id, self.user.id)

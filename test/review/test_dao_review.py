@@ -13,7 +13,6 @@ class TestReviewDAO(BaseTestCase):
         self.dish1 = self.create_dish(self.restaurant, self.category, name='Bún Bò Đặc Biệt', price=55000)
         self.dish2 = self.create_dish(self.restaurant, self.category, name='Bún Bò Giò Heo', price=45000)
 
-        # Order with dish1 only
         self.order = self.create_order(
             self.user,
             self.restaurant,
@@ -54,7 +53,6 @@ class TestReviewDAO(BaseTestCase):
         self.assertIn("Chỉ có thể đánh giá khi đơn hàng đã giao thành công", err)
 
     def test_save_dish_review_dish_not_in_order(self):
-        # dish2 was NOT in this order
         review, err = dao.save_or_update_dish_review(
             user_id=self.user.id,
             order_id=self.order.id,

@@ -42,11 +42,9 @@ class TestReviewAPI(BaseTestCase):
                                    'rating': 5
                                }),
                                content_type='application/json')
-        # Login required redirects or returns unauthorized
         self.assertIn(res.status_code, (302, 401))
 
     def test_get_dish_reviews_api(self):
-        # Submit a review first
         self.login_as(self.user)
         self.client.post(f'/api/orders/{self.order.id}/reviews',
                          data=json.dumps({
