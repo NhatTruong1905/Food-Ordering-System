@@ -18,7 +18,6 @@ Food-Ordering-System/
     ├── models.py
     ├── dao.py
     ├── index.py
-    ├── run.py
     ├── utils.py
     ├── vnpay.py
     │
@@ -70,11 +69,10 @@ python -m app.models
 *(hoặc: `python app/models.py`)*
 
 ### 3. Khởi chạy Server Web Flask
-Chạy file `run.py` bên trong package `app/`:
+Chạy file `main.py` tại thư mục gốc:
 ```bash
-python -m app.run
+python main.py
 ```
-*(hoặc: `python app/run.py`)*
 
 ### 4. Mở trên trình duyệt
 Truy cập đường dẫn:
