@@ -12,15 +12,17 @@ app = Flask(__name__, template_folder='templates', static_folder='static')
 
 app.secret_key = os.getenv('SECRET_KEY')
 
+use_local_db = os.getenv('USE_LOCAL_DB', 'false').lower() in ['true', '1']
 database_url = os.getenv('DATABASE_URL')
-if database_url:
+if database_url and database_url.strip() and not use_local_db:
+    database_url = database_url.strip()
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql+psycopg2://', 1)
     elif database_url.startswith('postgresql://'):
         database_url = database_url.replace('postgresql://', 'postgresql+psycopg2://', 1)
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 else:
-    db_user = urllib.parse.quote_plus(os.getenv('DB_USER', 'root'))
+    db_user = urllib.parse.quote_plus(os.getenv('DB_USER') or os.getenv('DB_USERNAME') or 'root')
     db_pass = urllib.parse.quote_plus(os.getenv('DB_PASSWORD', ''))
     db_host = os.getenv('DB_HOST', 'localhost')
     db_port = os.getenv('DB_PORT', '3306')
@@ -41,6 +43,4 @@ login.login_message_category = 'warning'
 from flask_sock import Sock
 
 sock = Sock(app=app)
-
-
 
