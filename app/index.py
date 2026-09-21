@@ -666,7 +666,8 @@ def checkout_restaurant(restaurant_id):
         res_stats = get_cart_stats(cart)
 
         if payment_method == PaymentMethodEnum.VNPAY:
-            return_url = request.host_url.rstrip('/') + '/vnpay_return'
+            configured_return_url = os.getenv('VNPAY_RETURN_URL') or os.getenv('vnp_ReturnUrl')
+            return_url = configured_return_url if configured_return_url else (request.host_url.rstrip('/') + '/vnpay_return')
             client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
             if client_ip and ',' in client_ip:
                 client_ip = client_ip.split(',')[0].strip()
@@ -955,7 +956,8 @@ def retry_vnpay_payment(order_id):
         order.payment.status = PaymentStatusEnum.PENDING
         db.session.commit()
 
-    return_url = request.host_url.rstrip('/') + '/vnpay_return'
+    configured_return_url = os.getenv('VNPAY_RETURN_URL') or os.getenv('vnp_ReturnUrl')
+    return_url = configured_return_url if configured_return_url else (request.host_url.rstrip('/') + '/vnpay_return')
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     if client_ip and ',' in client_ip:
         client_ip = client_ip.split(',')[0].strip()
@@ -1318,19 +1320,43 @@ def chat_socket(ws, order_id):
                 active_chat_rooms.pop(order_id, None)
 
 
-RAG_API_BASE = os.getenv("RAG_API_BASE", "http://127.0.0.1:8000")
+def get_rag_api_base() -> str:
+    """
+    Xác định URL của RAG API:
+    - Nếu có cấu hình RAG_API_BASE trong môi trường (.env hoặc Railway Variables) -> ưu tiên sử dụng.
+    - Nếu không và đang chạy trên Railway / Cloud -> fallback về https://rag-food-ordering-system-production.up.railway.app
+    - Nếu không và đang chạy local -> fallback về http://127.0.0.1:8000
+    """
+    env_rag = os.getenv("RAG_API_BASE")
+    if env_rag and env_rag.strip():
+        return env_rag.strip().rstrip('/')
+
+    is_deployed = bool(
+        os.getenv("RAILWAY_ENVIRONMENT")
+        or os.getenv("RAILWAY_PROJECT_ID")
+        or os.getenv("DYNO")
+        or os.getenv("RENDER")
+    )
+    if is_deployed:
+        return "https://rag-food-ordering-system-production.up.railway.app"
+    return "http://127.0.0.1:8000"
 
 
 @app.route('/api/ai-chat/status', methods=['GET'])
 def ai_chat_status():
+    rag_base = get_rag_api_base()
     try:
-        req = urllib.request.Request(f"{RAG_API_BASE}/openapi.json", method="GET")
-        with urllib.request.urlopen(req, timeout=1.5) as resp:
+        req = urllib.request.Request(
+            f"{rag_base}/openapi.json",
+            headers={"User-Agent": "FoodOrderingApp/1.0", "Accept": "application/json"},
+            method="GET"
+        )
+        with urllib.request.urlopen(req, timeout=3.5) as resp:
             if resp.status == 200:
-                return jsonify({"status": "online", "rag_url": RAG_API_BASE})
+                return jsonify({"status": "online", "rag_url": rag_base})
     except Exception as e:
-        return jsonify({"status": "offline", "error": str(e), "rag_url": RAG_API_BASE}), 200
-    return jsonify({"status": "offline", "rag_url": RAG_API_BASE}), 200
+        return jsonify({"status": "offline", "error": str(e), "rag_url": rag_base}), 200
+    return jsonify({"status": "offline", "rag_url": rag_base}), 200
 
 
 @app.route('/api/ai-chat/stream', methods=['POST'])
@@ -1342,13 +1368,19 @@ def ai_chat_stream():
     if not query_text:
         return jsonify({"error": "Vui lòng nhập câu hỏi cần tư vấn món ăn"}), 400
 
+    rag_base = get_rag_api_base()
+
     def generate():
-        target_url = f"{RAG_API_BASE}/query/stream"
+        target_url = f"{rag_base}/query/stream"
         payload = json.dumps({"query": query_text, "top_k": top_k, "sse": False}).encode('utf-8')
         req = urllib.request.Request(
             target_url,
             data=payload,
-            headers={"Content-Type": "application/json", "Accept": "text/plain"},
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "text/plain",
+                "User-Agent": "FoodOrderingApp/1.0"
+            },
             method="POST"
         )
         try:
@@ -1359,14 +1391,21 @@ def ai_chat_stream():
                         break
                     yield chunk.decode('utf-8', errors='replace')
         except urllib.error.URLError:
-            msg = (
-                "⚠️ Dạ hiện tại em chưa thể kết nối trực tiếp tới máy chủ AI (RAG Server cổng 8000).\n\n"
-                " Anh/chị hoặc Quản trị viên vui lòng chạy lệnh sau trên terminal để khởi động AI Server:\n"
-                "```bash\n"
-                "python RAG-Food-Ordering-System/api/main.py\n"
-                "```\n"
-                "Sau khi server khởi động xong, anh/chị nhấn gửi lại câu hỏi là được ngay ạ! ✨"
-            )
+            is_local = "127.0.0.1" in rag_base or "localhost" in rag_base
+            if is_local:
+                msg = (
+                    "⚠️ Hệ thống chưa thể kết nối trực tiếp tới máy chủ AI (RAG Server local cổng 8000).\n\n"
+                    "👉 Anh/chị hoặc Quản trị viên vui lòng chạy lệnh sau trên terminal để khởi động AI Server:\n"
+                    "```bash\n"
+                    "python RAG-Food-Ordering-System/api/main.py\n"
+                    "```\n"
+                    "💡 Mẹo: Có thể cấu hình `RAG_API_BASE=https://rag-food-ordering-system-production.up.railway.app` trong file `.env` để dùng AI Cloud mà không cần khởi động local!"
+                )
+            else:
+                msg = (
+                    f"⚠️ Hệ thống chưa thể kết nối tới máy chủ AI trên Cloud ({rag_base}).\n\n"
+                    "Vui lòng kiểm tra lại trạng thái dịch vụ RAG trên Railway hoặc thử lại sau ít phút!"
+                )
             yield msg
         except Exception as ex:
             yield f"⚠️ Đã có lỗi xảy ra khi xử lý phản hồi từ AI: {str(ex)}"

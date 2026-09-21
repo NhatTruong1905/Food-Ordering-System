@@ -5,12 +5,23 @@ import urllib.parse
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
-load_dotenv(override=True)
+load_dotenv()
 
 VNPAY_TMN_CODE = os.getenv('VNPAY_TMN_CODE') or os.getenv('vnp_TmnCode') or 'JKYF5BUS'
 VNPAY_HASH_SECRET = os.getenv('VNPAY_HASH_SECRET') or os.getenv('vnp_HashSecret') or '1NJEQK1N1WLBMZL9EI0JHWH0YI44M7OT'
 VNPAY_URL = os.getenv('VNPAY_URL') or os.getenv('vnp_Url') or 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'
-VNPAY_RETURN_URL = os.getenv('VNPAY_RETURN_URL') or os.getenv('vnp_ReturnUrl') or 'http://127.0.0.1:5000/vnpay_return'
+is_deployed = bool(
+    os.getenv("RAILWAY_ENVIRONMENT")
+    or os.getenv("RAILWAY_PROJECT_ID")
+    or os.getenv("DYNO")
+    or os.getenv("RENDER")
+)
+DEFAULT_VNPAY_RETURN_URL = (
+    'https://food-ordering-system-production-1cd8.up.railway.app/vnpay_return'
+    if is_deployed
+    else 'http://127.0.0.1:5000/vnpay_return'
+)
+VNPAY_RETURN_URL = os.getenv('VNPAY_RETURN_URL') or os.getenv('vnp_ReturnUrl') or DEFAULT_VNPAY_RETURN_URL
 
 VNPAY_RESPONSE_CODES = {
     '00': 'Giao dịch thành công',
@@ -32,13 +43,24 @@ def get_vnpay_response_message(code):
     return VNPAY_RESPONSE_CODES.get(str(code), 'Giao dịch không hoàn tất hoặc có lỗi phát sinh.')
 
 def build_vnpay_payment_url(order, request_ip, return_url=None):
-    load_dotenv(override=True)
+    load_dotenv()
     tmn_code = os.getenv('VNPAY_TMN_CODE') or os.getenv('vnp_TmnCode') or VNPAY_TMN_CODE
     hash_secret = os.getenv('VNPAY_HASH_SECRET') or os.getenv('vnp_HashSecret') or VNPAY_HASH_SECRET
     vnpay_url = os.getenv('VNPAY_URL') or os.getenv('vnp_Url') or VNPAY_URL
 
     if not return_url:
-        return_url = os.getenv('VNPAY_RETURN_URL') or os.getenv('vnp_ReturnUrl') or VNPAY_RETURN_URL
+        is_dep = bool(
+            os.getenv("RAILWAY_ENVIRONMENT")
+            or os.getenv("RAILWAY_PROJECT_ID")
+            or os.getenv("DYNO")
+            or os.getenv("RENDER")
+        )
+        default_ret = (
+            'https://food-ordering-system-production-1cd8.up.railway.app/vnpay_return'
+            if is_dep
+            else 'http://127.0.0.1:5000/vnpay_return'
+        )
+        return_url = os.getenv('VNPAY_RETURN_URL') or os.getenv('vnp_ReturnUrl') or default_ret
 
     now = datetime.now()
     create_date = now.strftime('%Y%m%d%H%M%S')
@@ -71,7 +93,7 @@ def build_vnpay_payment_url(order, request_ip, return_url=None):
     return f"{vnpay_url}?{hash_data}&vnp_SecureHash={secure_hash}"
 
 def verify_vnpay_response(query_dict):
-    load_dotenv(override=True)
+    load_dotenv()
     received_hash = query_dict.get('vnp_SecureHash', '')
     if not received_hash:
         return False
