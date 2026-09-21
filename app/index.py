@@ -780,7 +780,7 @@ def update_order_status(order_id):
         order.status = new_status
         db.session.commit()
 
-        if new_status in [OrderStatusEnum.COMPLETED, OrderStatusEnum.CANCELLED]:
+        if new_status == OrderStatusEnum.COMPLETED:
             with chat_rooms_lock:
                 room_sockets = list(active_chat_rooms.get(order.id, []))
                 active_chat_rooms.pop(order.id, None)
@@ -790,11 +790,34 @@ def update_order_status(order_id):
                 except Exception:
                     pass
 
+        reviews_map = {}
+        for r in order.reviews:
+            if r.is_active:
+                reviews_map[r.dish_id] = {
+                    'id': r.id,
+                    'rating': r.rating,
+                    'comment': r.comment or ''
+                }
+
+        items_list = []
+        for it in order.items:
+            items_list.append({
+                'dish_id': it.dish_id,
+                'dish_name': it.dish.name if it.dish else 'Món ăn',
+                'dish_image': it.dish.image_url if it.dish and it.dish.image_url else '',
+                'quantity': it.quantity,
+                'price_at_purchase': float(it.price_at_purchase),
+                'review': reviews_map.get(it.dish_id)
+            })
+
         status_event = json.dumps({
             "type": "order_status_updated",
             "order_id": order.id,
             "status": new_status.name,
-            "status_label": new_status.value
+            "status_label": new_status.value,
+            "restaurant_name": order.restaurant.name if order.restaurant else "Nhà hàng",
+            "restaurant_image": order.restaurant.image_url if order.restaurant and order.restaurant.image_url else "",
+            "items": items_list
         })
 
         with customer_order_lock:
@@ -805,6 +828,16 @@ def update_order_status(order_id):
             except Exception:
                 with customer_order_lock:
                     customer_order_sockets[order.user_id].discard(s)
+
+        if order.restaurant and order.restaurant.owner_id:
+            with restaurant_notification_lock:
+                rest_sockets = list(restaurant_notification_sockets.get(order.restaurant.owner_id, []))
+            for s in rest_sockets:
+                try:
+                    s.send(status_event)
+                except Exception:
+                    with restaurant_notification_lock:
+                        restaurant_notification_sockets[order.restaurant.owner_id].discard(s)
 
         return jsonify(
             {"status": "success", "message": f"Đã cập nhật trạng thái đơn #{order.id} thành {new_status.value}"}), 200
@@ -1150,7 +1183,7 @@ def chat_socket(ws, order_id):
         return
 
     order = Order.query.get(order_id)
-    if not order or order.status in [OrderStatusEnum.COMPLETED, OrderStatusEnum.CANCELLED]:
+    if not order or order.status == OrderStatusEnum.COMPLETED:
         ws.close()
         return
 
@@ -1328,7 +1361,7 @@ def ai_chat_stream():
         except urllib.error.URLError:
             msg = (
                 "⚠️ Dạ hiện tại em chưa thể kết nối trực tiếp tới máy chủ AI (RAG Server cổng 8000).\n\n"
-                "👉 Anh/chị hoặc Quản trị viên vui lòng chạy lệnh sau trên terminal để khởi động AI Server:\n"
+                " Anh/chị hoặc Quản trị viên vui lòng chạy lệnh sau trên terminal để khởi động AI Server:\n"
                 "```bash\n"
                 "python RAG-Food-Ordering-System/api/main.py\n"
                 "```\n"
@@ -1345,4 +1378,4 @@ def ai_chat_stream():
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no"
         }
-    )
+    )

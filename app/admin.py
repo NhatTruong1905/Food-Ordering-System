@@ -130,3 +130,5 @@ from flask_admin.menu import MenuLink
 
 admin.add_link(MenuLink(name='Về trang chủ', url='/'))
 admin.add_link(MenuLink(name='Đăng xuất', url='/logout'))
+
+

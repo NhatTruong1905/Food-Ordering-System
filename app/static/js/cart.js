@@ -403,10 +403,6 @@ function submitBankCardPayment() {
     });
 }
 
-function payWithTestCard() {
-    submitBankCardPayment();
-}
-
 function openVNPayModal(orderId, totalAmount, paymentUrl) {
     currentVNPayOrderId = orderId;
     const modal = document.getElementById('vnpayPaymentModalBackdrop');

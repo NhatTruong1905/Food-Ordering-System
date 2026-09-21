@@ -256,10 +256,6 @@ def save_or_update_dish_review(user_id, order_id, dish_id, rating, comment=None)
     return review, None
 
 
-def get_reviews_by_order(order_id):
-    reviews = Review.query.filter_by(order_id=order_id, is_active=True).all()
-    return {r.dish_id: r for r in reviews}
-
 
 def get_dish_reviews(dish_id, limit=30):
     return Review.query.filter_by(dish_id=dish_id, is_active=True)\

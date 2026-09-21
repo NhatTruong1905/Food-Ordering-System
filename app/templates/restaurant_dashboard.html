@@ -131,11 +131,9 @@
                                     <option value="COMPLETED" {% if o.status.name == 'COMPLETED' %}selected{% endif %}>Hoàn thành</option>
                                     <option value="CANCELLED" {% if o.status.name == 'CANCELLED' %}selected{% endif %}>Đã Hủy</option>
                                 </select>
-                                {% if o.status.name not in ['COMPLETED', 'CANCELLED'] %}
-                                <button type="button" class="btn-order-chat-{{ o.id }}" onclick="openChatWithOrder({{ o.id }}, 'Khách hàng (Đơn #{{ o.id }})', '')" style="padding: 8px 12px; background: #1a4224; color: #ffffff; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;" title="Nhắn tin với khách hàng" aria-label="Nhắn tin với khách hàng">
+                                <button type="button" class="btn-order-chat-{{ o.id }}" onclick="openChatWithOrder({{ o.id }}, 'Khách hàng (Đơn #{{ o.id }})', '')" style="padding: 8px 12px; background: #1a4224; color: #ffffff; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; display: {% if o.status.name == 'COMPLETED' %}none{% else %}inline-flex{% endif %}; align-items: center; gap: 6px; white-space: nowrap;" title="Nhắn tin với khách hàng" aria-label="Nhắn tin với khách hàng">
                                     <i class="fa-solid fa-comments"></i> Chat
                                 </button>
-                                {% endif %}
                             </td>
                         </tr>
                         {% else %}
@@ -289,12 +287,8 @@ function updateStatus(orderId, newStatus) {
         if(data.error) {
             alert("Lỗi: " + data.error);
         } else {
-            if (newStatus === 'COMPLETED' || newStatus === 'CANCELLED') {
-                const btn = document.querySelector(`.btn-order-chat-${orderId}`) || document.querySelector(`button[onclick*="openChatWithOrder(${orderId},"]`);
-                if (btn) btn.remove();
-                if (typeof activeChatOrderId !== 'undefined' && activeChatOrderId === orderId && typeof closeChatWidget === 'function') {
-                    closeChatWidget();
-                }
+            if (typeof applyOrderStatusOnRestaurantUi === 'function') {
+                applyOrderStatusOnRestaurantUi(orderId, newStatus);
             }
         }
     })
