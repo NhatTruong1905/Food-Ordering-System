@@ -151,7 +151,7 @@
         {% if orders and orders|length > 0 %}
             <div class="orders-list">
                 {% for order in orders %}
-                    <div class="order-card" id="order-card-{{ order.id }}">
+                    <div class="order-card" id="order-card-{{ order.id }}" data-restaurant-name="{{ (order.restaurant.name if order.restaurant else 'Nhà hàng')|replace('"', '&quot;') }}" data-restaurant-image="{{ order.restaurant.image_url if order.restaurant and order.restaurant.image_url else '' }}">
                         <div class="order-card-header">
                             <div>
                                 <span class="order-id-title">Đơn hàng #{{ order.id }}</span>
@@ -199,74 +199,72 @@
                                     </div>
                                 </div>
                             </div>
-                        {% else %}
-                            {% set st = order.status.value %}
-                            {% set is_step1 = true %}
-                            {% set is_step2 = (st == 'CONFIRMED' or st == 'PREPARING' or st == 'DELIVERING' or st == 'COMPLETED') %}
-                            {% set is_step3 = (st == 'DELIVERING' or st == 'COMPLETED') %}
-                            {% set is_step4 = (st == 'COMPLETED') %}
+                        {% endif %}
 
-                            <div class="order-stepper-box">
-                                <div class="order-stepper">
-                                    <div class="stepper-line">
-                                        <div class="stepper-line-fill" style="width: {% if is_step4 %}100%{% elif is_step3 %}66%{% elif is_step2 %}33%{% else %}0%{% endif %};"></div>
+                        <div class="order-stepper-box" {% if order.status.value == 'CANCELLED' %}style="display: none;"{% endif %}>
+                            <div class="order-stepper" style="display: flex; flex-direction: row; align-items: flex-start; justify-content: space-between; position: relative; width: 100%;">
+                                {% set st = order.status.value %}
+                                {% set is_step2 = (st in ['CONFIRMED', 'PREPARING', 'DELIVERING', 'COMPLETED']) %}
+                                {% set is_step3 = (st in ['DELIVERING', 'COMPLETED']) %}
+                                {% set is_step4 = (st == 'COMPLETED') %}
+
+                                <div class="stepper-line" style="position: absolute; top: 20px; left: 12%; right: 12%; height: 3px; background: #e6dec9; z-index: 1;">
+                                    <div class="stepper-line-fill" style="height: 100%; background: var(--primary-green, #23592d); transition: width 0.4s ease; width: {% if is_step4 %}100%{% elif is_step3 %}66%{% elif is_step2 %}33%{% else %}0%{% endif %};"></div>
+                                </div>
+
+                                <div class="stepper-step completed {% if st == 'PENDING' %}active{% endif %}" style="flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; z-index: 2;">
+                                    <div class="stepper-icon-circle">
+                                        <i class="fa-solid fa-receipt"></i>
                                     </div>
+                                    <div class="stepper-step-title">Đặt đơn</div>
+                                    <div style="font-size: 11.5px; color: #2d3748; font-weight: 600; margin-top: 2px;">{{ order.created_at.strftime('%H:%M') if order.created_at else '' }}</div>
+                                </div>
 
-                                    <div class="stepper-step {% if is_step1 %}completed{% endif %} {% if st == 'PENDING' %}active{% endif %}">
-                                        <div class="stepper-icon-circle">
-                                            <i class="fa-solid fa-receipt"></i>
-                                        </div>
-                                        <div class="stepper-step-title">Đặt hàng</div>
-                                        <div style="font-size: 11.5px; color: #2d3748; font-weight: 600; margin-top: 2px;">{{ order.created_at.strftime('%H:%M') if order.created_at else '' }}</div>
+                                <div class="stepper-step {% if is_step2 %}completed{% endif %} {% if st == 'CONFIRMED' or st == 'PREPARING' %}active{% endif %}" style="flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; z-index: 2;">
+                                    <div class="stepper-icon-circle">
+                                        <i class="fa-solid fa-utensils"></i>
                                     </div>
-
-                                    <div class="stepper-step {% if is_step2 %}completed{% endif %} {% if st == 'CONFIRMED' or st == 'PREPARING' %}active{% endif %}">
-                                        <div class="stepper-icon-circle">
-                                            <i class="fa-solid fa-utensils"></i>
-                                        </div>
-                                        <div class="stepper-step-title">Chuẩn bị món</div>
-                                        <div style="font-size: 11.5px; color: #2d3748; font-weight: 600; margin-top: 2px;">
-                                            {% if is_step2 %}Bếp nấu{% else %}Chờ duyệt{% endif %}
-                                        </div>
+                                    <div class="stepper-step-title">Chuẩn bị món</div>
+                                    <div style="font-size: 11.5px; color: #2d3748; font-weight: 600; margin-top: 2px;">
+                                        {% if is_step2 %}Bếp nấu{% else %}Chờ duyệt{% endif %}
                                     </div>
+                                </div>
 
-                                    <div class="stepper-step {% if is_step3 %}completed{% endif %} {% if st == 'DELIVERING' %}active{% endif %}">
-                                        <div class="stepper-icon-circle">
-                                            <i class="fa-solid fa-truck-fast"></i>
-                                        </div>
-                                        <div class="stepper-step-title">Đang giao</div>
-                                        <div style="font-size: 11.5px; color: #2d3748; font-weight: 600; margin-top: 2px;">
-                                            {% if is_step3 %}Shipper nhận{% else %}Lộ trình{% endif %}
-                                        </div>
+                                <div class="stepper-step {% if is_step3 %}completed{% endif %} {% if st == 'DELIVERING' %}active{% endif %}" style="flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; z-index: 2;">
+                                    <div class="stepper-icon-circle">
+                                        <i class="fa-solid fa-truck-fast"></i>
                                     </div>
+                                    <div class="stepper-step-title">Đang giao</div>
+                                    <div style="font-size: 11.5px; color: #2d3748; font-weight: 600; margin-top: 2px;">
+                                        {% if is_step3 %}Shipper nhận{% else %}Lộ trình{% endif %}
+                                    </div>
+                                </div>
 
-                                    <div class="stepper-step {% if is_step4 %}completed{% endif %}">
-                                        <div class="stepper-icon-circle">
-                                            <i class="fa-solid fa-circle-check"></i>
-                                        </div>
-                                        <div class="stepper-step-title">Giao thành công</div>
-                                        <div style="font-size: 11.5px; color: #2d3748; font-weight: 600; margin-top: 2px;">
-                                            {% if is_step4 %}Hoàn tất{% else %}Đích đến{% endif %}
-                                        </div>
+                                <div class="stepper-step {% if is_step4 %}completed active{% endif %}" style="flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; z-index: 2;">
+                                    <div class="stepper-icon-circle">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                    </div>
+                                    <div class="stepper-step-title">Giao thành công</div>
+                                    <div style="font-size: 11.5px; color: #2d3748; font-weight: 600; margin-top: 2px;">
+                                        {% if is_step4 %}Hoàn tất{% else %}Đích đến{% endif %}
                                     </div>
                                 </div>
                             </div>
-                        {% endif %}
+                        </div>
 
-                        <div style="margin-bottom: 14px; font-size: 14px; color: #111827; line-height: 1.7;">
-                            <div>
-                                <i class="fa-solid fa-store" style="color: #cda434; width: 20px;"></i>
-                                <strong style="color: #111827;">Nhà hàng:</strong> <span style="color: var(--primary-green-dark, #2c4c3b); font-weight: 600;">{{ order.restaurant.name if order.restaurant else 'Hệ thống Food Shoppe' }}</span>
+                        <div class="order-info-section">
+                            <div class="order-info-item">
+                                <span class="order-info-label"><i class="fa-solid fa-store"></i> Nhà hàng:</span>
+                                <span>{{ order.restaurant.name if order.restaurant else 'Hệ thống Food Shoppe' }}</span>
                             </div>
-                            <div style="margin-top: 4px;">
-                                <i class="fa-solid fa-location-dot" style="color: #cda434; width: 20px;"></i>
-                                <strong style="color: #111827;">Địa chỉ nhận món:</strong> <span>{{ order.delivery_address }}</span>
+                            <div class="order-info-item">
+                                <span class="order-info-label"><i class="fa-solid fa-location-dot"></i> Địa chỉ giao:</span>
+                                <span>{{ order.delivery_address }}</span>
                             </div>
                             {% if order.payment %}
-                            <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <div class="order-info-item" style="flex-wrap: wrap; gap: 8px;">
                                 <div>
-                                    <i class="fa-regular fa-credit-card" style="color: #cda434; width: 20px;"></i>
-                                    <strong style="color: #111827;">Phương thức:</strong>
+                                    <span class="order-info-label"><i class="fa-solid fa-credit-card"></i> Phương thức:</span>
                                     <span>{{ 'Thanh toán tiền mặt (COD)' if order.payment.method.value == 'CASH' else 'Cổng thanh toán VNPAY' }}</span>
                                 </div>
                                 {% if order.payment.method.value == 'VNPAY' and order.payment.status.value == 'SUCCESS' %}
@@ -286,7 +284,17 @@
                         <div class="order-items-table" style="background: #faf8f4; border: 1.5px solid #ebd9bf; border-radius: 8px; padding: 12px 18px; margin-bottom: 16px;">
                             {% for item in order.items %}
                                 {% set dish_rev = order_reviews.get(order.id, {}).get(item.dish_id) if order_reviews else None %}
-                                <div class="order-item-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dotted #ebd9bf; font-size: 13.5px; flex-wrap: wrap; gap: 10px;">
+                                <div class="order-item-row"
+                                     id="order-{{ order.id }}-dish-{{ item.dish_id }}-row"
+                                     data-order-id="{{ order.id }}"
+                                     data-dish-id="{{ item.dish_id }}"
+                                     data-dish-name="{{ (item.dish.name if item.dish else 'Món ăn')|replace('"', '&quot;') }}"
+                                     data-dish-image="{{ item.dish.image_url if item.dish and item.dish.image_url else '' }}"
+                                     data-restaurant-name="{{ (order.restaurant.name if order.restaurant else 'Nhà hàng')|replace('"', '&quot;') }}"
+                                     data-has-review="{{ 'true' if dish_rev else 'false' }}"
+                                     data-review-rating="{{ dish_rev.rating if dish_rev else '' }}"
+                                     data-review-comment="{{ (dish_rev.comment if dish_rev and dish_rev.comment else '')|replace('"', '&quot;') }}"
+                                     style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dotted #ebd9bf; font-size: 13.5px; flex-wrap: wrap; gap: 10px;">
                                     <div style="display: flex; align-items: center; gap: 12px;">
                                         {% if item.dish and item.dish.image_url %}
                                             <img src="{{ item.dish.image_url }}" alt="{{ item.dish.name }}" style="width: 44px; height: 44px; border-radius: 6px; object-fit: cover; border: 1px solid #ebd9bf; flex-shrink: 0;">
@@ -300,16 +308,18 @@
                                                 <strong style="color: #111827;">{{ item.dish.name if item.dish else 'Món ngon' }}</strong>
                                                 <span style="color: #1a4224; font-weight: 700; background: #f4ecd9; padding: 2px 8px; border-radius: 4px; margin-left: 8px;">× {{ item.quantity }}</span>
                                             </div>
-                                            {% if order.status.value == 'COMPLETED' and dish_rev %}
-                                                <div style="margin-top: 4px; font-size: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                                    <span style="color: #f39c12; font-weight: 700; letter-spacing: 1px;">
-                                                        {% for s in range(dish_rev.rating) %}★{% endfor %}{% for s in range(5 - dish_rev.rating) %}☆{% endfor %}
-                                                    </span>
-                                                    <span style="color: #555; font-style: italic;">
-                                                        {% if dish_rev.comment %}"{{ dish_rev.comment }}"{% else %}(Đã đánh giá {{ dish_rev.rating }} sao){% endif %}
-                                                    </span>
-                                                </div>
-                                            {% endif %}
+                                            <div class="order-item-review-summary" id="order-{{ order.id }}-dish-{{ item.dish_id }}-summary">
+                                                {% if order.status.value == 'COMPLETED' and dish_rev %}
+                                                    <div style="margin-top: 4px; font-size: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                                        <span style="color: #f39c12; font-weight: 700; letter-spacing: 1px;">
+                                                            {% for s in range(dish_rev.rating) %}★{% endfor %}{% for s in range(5 - dish_rev.rating) %}☆{% endfor %}
+                                                        </span>
+                                                        <span style="color: #555; font-style: italic;">
+                                                            {% if dish_rev.comment %}"{{ dish_rev.comment }}"{% else %}(Đã đánh giá {{ dish_rev.rating }} sao){% endif %}
+                                                        </span>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -317,26 +327,28 @@
                                         <div style="font-weight: 700; color: var(--primary-green-dark, #2c4c3b);">
                                             {{ "{:,.0f}".format(item.price_at_purchase * item.quantity) }} ₫
                                         </div>
-                                        {% if order.status.value == 'COMPLETED' %}
-                                            {% if dish_rev %}
-                                                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
-                                                    <span style="background: #e8f5e9; color: #1e7e34; border: 1px solid #c3e6cb; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);" title="{{ dish_rev.comment or 'Đã gửi đánh giá' }}">
-                                                        <i class="fa-solid fa-circle-check" style="color: #28a745;"></i> Đã đánh giá ({{ dish_rev.rating }}★)
-                                                    </span>
-                                                    {% if dish_rev.comment %}
-                                                        <span style="font-size: 11.5px; color: #666; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-style: italic;" title="{{ dish_rev.comment }}">
-                                                            "{{ dish_rev.comment }}"
+                                        <div class="order-item-review-action" id="order-{{ order.id }}-dish-{{ item.dish_id }}-action">
+                                            {% if order.status.value == 'COMPLETED' %}
+                                                {% if dish_rev %}
+                                                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                                        <span style="background: #e8f5e9; color: #1e7e34; border: 1px solid #c3e6cb; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);" title="{{ dish_rev.comment or 'Đã gửi đánh giá' }}">
+                                                            <i class="fa-solid fa-circle-check" style="color: #28a745;"></i> Đã đánh giá ({{ dish_rev.rating }}★)
                                                         </span>
-                                                    {% endif %}
-                                                </div>
-                                            {% else %}
-                                                <button type="button" class="btn-review-dish"
-                                                        onclick="openReviewModal({{ order.id }}, {{ item.dish_id }}, '{{ (item.dish.name if item.dish else 'Món ăn')|replace('\'', '\\\'') }}', '{{ item.dish.image_url if item.dish and item.dish.image_url else '' }}', '{{ (order.restaurant.name if order.restaurant else 'Nhà hàng')|replace('\'', '\\\'') }}')"
-                                                        style="background: linear-gradient(135deg, #cda434, #b8860b); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 6px rgba(184,134,11,0.25); transition: all 0.2s;">
-                                                    <i class="fa-solid fa-star"></i> Đánh giá món
-                                                </button>
+                                                        {% if dish_rev.comment %}
+                                                            <span style="font-size: 11.5px; color: #666; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-style: italic;" title="{{ dish_rev.comment }}">
+                                                                "{{ dish_rev.comment }}"
+                                                            </span>
+                                                        {% endif %}
+                                                    </div>
+                                                {% else %}
+                                                    <button type="button" class="btn-review-dish"
+                                                            onclick="openReviewModal({{ order.id }}, {{ item.dish_id }}, '{{ (item.dish.name if item.dish else 'Món ăn')|replace('\'', '\\\'') }}', '{{ item.dish.image_url if item.dish and item.dish.image_url else '' }}', '{{ (order.restaurant.name if order.restaurant else 'Nhà hàng')|replace('\'', '\\\'') }}')"
+                                                            style="background: linear-gradient(135deg, #cda434, #b8860b); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 6px rgba(184,134,11,0.25); transition: all 0.2s;">
+                                                        <i class="fa-solid fa-star"></i> Đánh giá món
+                                                    </button>
+                                                {% endif %}
                                             {% endif %}
-                                        {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                             {% endfor %}
@@ -348,7 +360,7 @@
                                 <span class="order-total-highlight">{{ "{:,.0f}".format(order.total_amount) }} ₫</span>
                             </div>
 
-                            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                            <div class="order-card-actions" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
 
                                 {% if order.status.value == 'PENDING' and not (order.payment and order.payment.status.value == 'SUCCESS') %}
                                     <button type="button" class="btn-cancel-order" onclick="cancelOrder({{ order.id }})">
@@ -356,11 +368,9 @@
                                     </button>
                                 {% endif %}
 
-                                {% if order.status.value not in ['COMPLETED', 'CANCELLED'] %}
-                                    <button type="button" class="btn-order-chat-{{ order.id }} btn-chat-restaurant" onclick="openChatWithOrder({{ order.id }}, '{{ (order.restaurant.name if order.restaurant else 'Nhà hàng')|replace('\'', '\\\'') }}', '{{ order.restaurant.image_url if order.restaurant and order.restaurant.image_url else '' }}')" style="background: #1a4224; color: #ffffff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
-                                        <i class="fa-solid fa-comments"></i> Chat với chủ nhà hàng
-                                    </button>
-                                {% endif %}
+                                <button type="button" class="btn-order-chat-{{ order.id }} btn-chat-restaurant" onclick="openChatWithOrder({{ order.id }}, '{{ (order.restaurant.name if order.restaurant else 'Nhà hàng')|replace('\'', '\\\'') }}', '{{ order.restaurant.image_url if order.restaurant and order.restaurant.image_url else '' }}')" style="background: #1a4224; color: #ffffff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; display: {% if order.status.value == 'COMPLETED' %}none{% else %}inline-flex{% endif %}; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                                    <i class="fa-solid fa-comments"></i> Chat với chủ nhà hàng
+                                </button>
 
                                 <a href="/#restaurants" class="btn-reorder-link">
                                     <i class="fa-solid fa-utensils"></i> Khám phá thêm món
@@ -766,10 +776,6 @@ function submitBankCardPayment() {
         }
         alert("Đã xảy ra lỗi kết nối khi xác thực thẻ ngân hàng.");
     });
-}
-
-function payWithTestCard() {
-    submitBankCardPayment();
 }
 
 function retryVNPay(orderId) {

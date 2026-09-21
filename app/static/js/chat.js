@@ -132,9 +132,9 @@ function disconnectChatWebSocket() {
 function openChatWithOrder(orderId, restaurantName, restaurantImage) {
     const card = document.getElementById('order-card-' + orderId);
     if (card) {
-        const isEnded = card.querySelector('.badge-completed, .badge-cancelled');
+        const isEnded = card.querySelector('.badge-completed');
         if (isEnded) {
-            alert('Đơn hàng này đã hoàn thành hoặc đã hủy, không thể trò chuyện tiếp.');
+            alert('Đơn hàng này đã hoàn tất, không thể trò chuyện tiếp.');
             return;
         }
     }
@@ -433,6 +433,10 @@ function initRestaurantNotifications() {
             const data = JSON.parse(event.data);
             if (data && data.type === 'new_chat_message') {
                 handleIncomingNotification(data);
+            } else if (data && data.type === 'order_status_updated') {
+                if (typeof applyOrderStatusOnRestaurantUi === 'function') {
+                    applyOrderStatusOnRestaurantUi(data.order_id, data.status);
+                }
             }
         } catch (e) {}
     };
@@ -505,19 +509,34 @@ function handleLiveOrderStatusUpdate(data) {
 
     playNotificationSound();
 
-    if (st === 'COMPLETED' || st === 'CANCELLED') {
-        const chatBtn = card.querySelector('.btn-chat-restaurant');
-        if (chatBtn) {
-            chatBtn.remove();
-        }
-        const restChatBtn = document.querySelector(`.btn-order-chat-${orderId}`) || document.querySelector(`button[onclick*="openChatWithOrder(${orderId},"]`);
-        if (restChatBtn) {
-            restChatBtn.remove();
-        }
+    const isCompleted = (st === 'COMPLETED');
+
+    let chatBtn = card.querySelector(`.btn-order-chat-${orderId}, .btn-chat-restaurant`);
+    if (isCompleted) {
+        if (chatBtn) chatBtn.style.display = 'none';
         if (activeChatOrderId === orderId && chatIsOpen) {
             closeChatWidget();
         }
+    } else {
+        if (chatBtn) {
+            chatBtn.style.display = 'inline-flex';
+        } else {
+            const actionsContainer = card.querySelector('.order-card-actions') || card.querySelector('.order-card-footer > div:last-child');
+            if (actionsContainer) {
+                const restName = (data.restaurant_name || card.getAttribute('data-restaurant-name') || 'Nhà hàng').replace(/'/g, "\\'");
+                const restImg = data.restaurant_image || card.getAttribute('data-restaurant-image') || '';
+                chatBtn = document.createElement('button');
+                chatBtn.type = 'button';
+                chatBtn.className = `btn-order-chat-${orderId} btn-chat-restaurant`;
+                chatBtn.onclick = () => openChatWithOrder(orderId, restName, restImg);
+                chatBtn.style.cssText = 'background: #1a4224; color: #ffffff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; font-family: "Plus Jakarta Sans", sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;';
+                chatBtn.innerHTML = '<i class="fa-solid fa-comments"></i> Chat với chủ nhà hàng';
+                actionsContainer.insertBefore(chatBtn, actionsContainer.firstChild);
+            }
+        }
     }
+
+    updateOrderCardReviewUi(card, isCompleted, data.items, data.restaurant_name, data.restaurant_image);
 
     const badgeContainer = card.querySelector('.order-card-header > div:last-child');
     if (badgeContainer) {
@@ -694,6 +713,110 @@ if (document.readyState === 'loading') {
     initRealtimeListeners();
 }
 
+function updateOrderCardReviewUi(card, isCompleted, itemsData, restName, restImage) {
+    if (!card) return;
+    const orderId = card.id ? card.id.replace('order-card-', '') : null;
+    if (!orderId) return;
+
+    const itemRows = card.querySelectorAll('.order-item-row');
+    itemRows.forEach(row => {
+        const dishId = row.getAttribute('data-dish-id');
+        const dishName = row.getAttribute('data-dish-name') || 'Món ăn';
+        const dishImage = row.getAttribute('data-dish-image') || '';
+        const restaurantName = restName || row.getAttribute('data-restaurant-name') || card.getAttribute('data-restaurant-name') || 'Nhà hàng';
+
+        let reviewInfo = null;
+        if (itemsData && Array.isArray(itemsData)) {
+            const itemMatch = itemsData.find(it => String(it.dish_id) === String(dishId));
+            if (itemMatch && itemMatch.review) {
+                reviewInfo = itemMatch.review;
+            }
+        }
+        if (!reviewInfo && row.getAttribute('data-has-review') === 'true') {
+            const rRating = parseInt(row.getAttribute('data-review-rating') || '5');
+            const rComment = row.getAttribute('data-review-comment') || '';
+            reviewInfo = { rating: rRating, comment: rComment };
+        }
+
+        const summaryContainer = row.querySelector('.order-item-review-summary');
+        const actionContainer = row.querySelector('.order-item-review-action');
+
+        if (isCompleted) {
+            if (reviewInfo) {
+                let starsHtml = '';
+                for (let s = 0; s < reviewInfo.rating; s++) starsHtml += '★';
+                for (let s = 0; s < (5 - reviewInfo.rating); s++) starsHtml += '☆';
+                const commentText = reviewInfo.comment ? `"${reviewInfo.comment}"` : `(Đã đánh giá ${reviewInfo.rating} sao)`;
+
+                if (summaryContainer) {
+                    summaryContainer.innerHTML = `
+                        <div style="margin-top: 4px; font-size: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                            <span style="color: #f39c12; font-weight: 700; letter-spacing: 1px;">${starsHtml}</span>
+                            <span style="color: #555; font-style: italic;">${commentText}</span>
+                        </div>
+                    `;
+                }
+                if (actionContainer) {
+                    actionContainer.innerHTML = `
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                            <span style="background: #e8f5e9; color: #1e7e34; border: 1px solid #c3e6cb; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);" title="${reviewInfo.comment || 'Đã gửi đánh giá'}">
+                                <i class="fa-solid fa-circle-check" style="color: #28a745;"></i> Đã đánh giá (${reviewInfo.rating}★)
+                            </span>
+                            ${reviewInfo.comment ? `<span style="font-size: 11.5px; color: #666; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-style: italic;" title="${reviewInfo.comment}">"${reviewInfo.comment}"</span>` : ''}
+                        </div>
+                    `;
+                }
+            } else {
+                if (summaryContainer) summaryContainer.innerHTML = '';
+                if (actionContainer) {
+                    const safeDishName = dishName.replace(/'/g, "\\'");
+                    const safeRestName = restaurantName.replace(/'/g, "\\'");
+                    actionContainer.innerHTML = `
+                        <button type="button" class="btn-review-dish"
+                                onclick="openReviewModal(${orderId}, ${dishId}, '${safeDishName}', '${dishImage}', '${safeRestName}')"
+                                style="background: linear-gradient(135deg, #cda434, #b8860b); color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 6px rgba(184,134,11,0.25); transition: all 0.2s;">
+                            <i class="fa-solid fa-star"></i> Đánh giá món
+                        </button>
+                    `;
+                }
+            }
+        } else {
+            if (summaryContainer) summaryContainer.innerHTML = '';
+            if (actionContainer) actionContainer.innerHTML = '';
+        }
+    });
+}
+
+function applyOrderStatusOnRestaurantUi(orderId, status) {
+    const isCompleted = (status === 'COMPLETED');
+    const select = document.querySelector(`select[onchange*="updateStatus(${orderId},"]`);
+    if (select && select.value !== status) {
+        select.value = status;
+    }
+
+    let chatBtn = document.querySelector(`.btn-order-chat-${orderId}`);
+    if (isCompleted) {
+        if (chatBtn) chatBtn.style.display = 'none';
+        if (typeof activeChatOrderId !== 'undefined' && activeChatOrderId === orderId && typeof closeChatWidget === 'function') {
+            closeChatWidget();
+        }
+    } else {
+        if (chatBtn) {
+            chatBtn.style.display = 'inline-flex';
+        } else if (select && select.parentElement) {
+            chatBtn = document.createElement('button');
+            chatBtn.type = 'button';
+            chatBtn.className = `btn-order-chat-${orderId}`;
+            chatBtn.onclick = () => openChatWithOrder(orderId, `Khách hàng (Đơn #${orderId})`, '');
+            chatBtn.style.cssText = 'padding: 8px 12px; background: #1a4224; color: #ffffff; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;';
+            chatBtn.title = 'Nhắn tin với khách hàng';
+            chatBtn.setAttribute('aria-label', 'Nhắn tin với khách hàng');
+            chatBtn.innerHTML = '<i class="fa-solid fa-comments"></i> Chat';
+            select.parentElement.appendChild(chatBtn);
+        }
+    }
+}
+
 window.showChatButtonForOrder = showChatButtonForOrder;
 window.openChatWithOrder = openChatWithOrder;
 window.toggleChatWidget = toggleChatWidget;
@@ -704,6 +827,7 @@ window.connectChatWebSocket = connectChatWebSocket;
 window.disconnectChatWebSocket = disconnectChatWebSocket;
 window.initRestaurantNotifications = initRestaurantNotifications;
 window.handleIncomingNotification = handleIncomingNotification;
-window.handleIncomingCustomerMessage = handleIncomingNotification;
 window.initCustomerOrdersWebSocket = initCustomerOrdersWebSocket;
 window.handleLiveOrderStatusUpdate = handleLiveOrderStatusUpdate;
+window.updateOrderCardReviewUi = updateOrderCardReviewUi;
+window.applyOrderStatusOnRestaurantUi = applyOrderStatusOnRestaurantUi;

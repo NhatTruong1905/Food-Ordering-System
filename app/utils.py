@@ -14,3 +14,4 @@ def get_res_total(cart, restaurant_id):
         for item in cart[restaurant_id].get('items', {}).values():
             total += item['quantity'] * item['price']
     return total
+

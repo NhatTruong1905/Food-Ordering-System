@@ -88,3 +88,4 @@ def verify_vnpay_response(query_dict):
     calculated_hash = hmac.new(hash_secret.encode('utf-8'), hash_data.encode('utf-8'), hashlib.sha512).hexdigest()
 
     return calculated_hash.lower() == received_hash.lower()
+
