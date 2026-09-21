@@ -1,6 +1,7 @@
 let aiChatIsOpen = false;
 let aiAbortController = null;
 let isAiStreaming = false;
+let cachedRagUrl = null;
 
 async function checkAiServerStatus() {
     const dot = document.getElementById('aiStatusDot');
@@ -11,13 +12,17 @@ async function checkAiServerStatus() {
         const resp = await fetch('/api/ai-chat/status', { cache: 'no-store' });
         const data = await resp.json();
         if (data.status === 'online') {
+            cachedRagUrl = data.rag_url || null;
             dot.className = 'ai-status-indicator online';
             dot.title = 'AI RAG Server: Trực tuyến';
             if (text) text.innerText = 'Trực tuyến • Sẵn sàng tư vấn';
         } else {
             dot.className = 'ai-status-indicator offline';
             dot.title = 'AI RAG Server: Ngoại tuyến';
-            if (text) text.innerText = 'Chưa bật server RAG (cổng 8000)';
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            if (text) {
+                text.innerText = isLocal ? 'Chưa bật RAG (cổng 8000)' : 'AI Server tạm thời ngoại tuyến';
+            }
         }
     } catch (err) {
         dot.className = 'ai-status-indicator offline';
@@ -125,14 +130,25 @@ async function handleAiSubmit(event) {
                 signal: aiAbortController.signal
             });
         } catch (fetchErr) {
-            try {
-                response = await fetch('http://127.0.0.1:8000/query/stream', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: question, top_k: 3 }),
-                    signal: aiAbortController.signal
-                });
-            } catch (directErr) {
+            // Fallback trực tiếp nếu proxy backend gặp sự cố kết nối
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const fallbackUrl = cachedRagUrl || (isLocal 
+                ? 'http://127.0.0.1:8000/query/stream' 
+                : 'https://rag-food-ordering-system-production.up.railway.app/query/stream');
+
+            const isAllowedProtocol = fallbackUrl.startsWith(window.location.protocol) || window.location.protocol === 'http:';
+            if (isAllowedProtocol) {
+                try {
+                    response = await fetch(fallbackUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query: question, top_k: 3 }),
+                        signal: aiAbortController.signal
+                    });
+                } catch (directErr) {
+                    throw fetchErr;
+                }
+            } else {
                 throw fetchErr;
             }
         }
